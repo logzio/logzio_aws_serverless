@@ -1,6 +1,6 @@
 # CloudWatch Logs Shipper - Lambda
 
-This is a AWS Lambda function to collect CloudWatch logs using Lambda and send them to Logz.io in bulk, over HTTP.
+This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP.
 
 ## Step 1 - Creating the Lambda Function
 
@@ -10,7 +10,7 @@ This is a AWS Lambda function to collect CloudWatch logs using Lambda and send t
   - Name -  enter a name for your new Lambda function. We suggest adding the log type to the name. 
   - Runtime - from the drop-down menu, select Python 2.7 as the function’s runtime.
   - Role - leave the default *Choose an existing role* selection, and under Existing role, select *lambda_basic_execution*
-  - Hit the **Create Function** button in the bottom-right corner of the page.
+4. Hit the **Create Function** button in the bottom-right corner of the page.
  
 ## Step 2 - Uploading and configuring the Logz.io Lambda shipper
 
