@@ -21,6 +21,7 @@ This is an AWS Lambda function that collects CloudWatch logs and sends them to L
   - TYPE: the log type you are going to use with this Lambda. Please note that you should create a new Lambda for each log type you are using. For a list of the log types we support, go [here].
   - URL: the Logz.io listener URL. If you are in the EU region insert https://listener-eu.logz.io:8071. Otherwise, use https://listener.logz.io:8071. You can tell which region you are in by checking your login URL - *app.logz.io* means you are in the US. *app-eu.logz.io* means you are in the EU.
 4. In the Basic Settings section, we recommend to start by setting memory to 512(MB) and a 1(MIN) timeout, and then subsequently adjusting these values based on trial and error, and according to your Lambda usage.
+5. Leave the other settings as default
 
 ## Step 3 - Setting CloudWatch log event trigger
 1. Under Add triggers at the top of the page, select the CloudWatch Log trigger.
