@@ -70,6 +70,7 @@ def lambda_handler(event, context):
         if '@timestamp' not in log:
             log['@timestamp'] = str(log['timestamp'])
 
+        log['message'] = log['message'].replace('\n', '')
         log['logStream'] = awsLogsData['logStream']
         log['messageType'] = awsLogsData['messageType']
         log['owner'] = awsLogsData['owner']
