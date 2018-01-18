@@ -76,6 +76,14 @@ def lambda_handler(event, context):
         log['owner'] = awsLogsData['owner']
         log['logGroup'] = awsLogsData['logGroup']
 
+        if os.environ['TYPE'].lower() == 'json':
+            try:
+                json_object = json.loads(log['message'])
+                for key, value in json_object.items():
+                    log[key] = value
+            except ValueError:
+                pass
+
         jsonStrLogsList.append(json.dumps(log))
 
     sendToLogzio(jsonStrLogsList,logzioUrl)

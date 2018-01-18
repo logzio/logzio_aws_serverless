@@ -24,8 +24,7 @@ logger = logging.getLogger(__name__)
 class TestLambdaFunction(unittest.TestCase):
     """ Unit testing logzio lambda function """
 
-    @classmethod
-    def setUpClass(self):
+    def setUp(self):
         # Set os.environ for tests
         os.environ['URL'] = "https://listener.logz.io:8071"
         os.environ['TOKEN'] = "123456789"
@@ -37,8 +36,17 @@ class TestLambdaFunction(unittest.TestCase):
         s = string.lowercase + string.digits
         return ''.join(random.sample(s, STRINGLEN))
 
+    # Build random string with STRINGLEN chars
+    def _json_string_builder(self):
+        s = string.lowercase + string.digits
+        return json.dumps({
+                'field1': 'abcd',
+                'field2': 'efgh',
+                'message': ''.join(random.sample(s, STRINGLEN))
+            })
+
     # Create aws data json format string
-    def _data_body_builder(self):
+    def _data_body_builder(self, message_builder):
         dataBody = {}
         dataBody['logStream'] = 'TestStream'
         dataBody['messageType'] = 'DATA_MESSAGE'
@@ -47,7 +55,7 @@ class TestLambdaFunction(unittest.TestCase):
         # Each awslog event contain BODYSIZE messages
         for i in range(BODYSIZE):
             log = { "timestamp" : i,
-                    "message" : self._random_string_builder(),
+                    "message" : message_builder(),
                     "id" : i
             }
             dataBody['logEvents'].append(log)
@@ -58,11 +66,11 @@ class TestLambdaFunction(unittest.TestCase):
         return dataBody
 
     # Encrypt and zip the data as awslog format require
-    def _generate_aws_logs_event(self):
+    def _generate_aws_logs_event(self, message_builder):
         event = {}
         event['awslogs'] = {}
 
-        data = self._data_body_builder()
+        data = self._data_body_builder(message_builder)
         zipTextFile = StringIO()
         zipper = gzip.GzipFile(mode='wb', fileobj=zipTextFile)
         zipper.write(json.dumps(data))
@@ -84,13 +92,29 @@ class TestLambdaFunction(unittest.TestCase):
                                                                                 genLogEvents[i]['message'], i))
 
             self.assertEqual(jsonBodyLog['timestamp'], genLogEvents[i]['timestamp'])
-            self.assertEqual(jsonBodyLog['message'], genLogEvents[i]['message'])
             self.assertEqual(jsonBodyLog['id'], genLogEvents[i]['id'])
+            self.assertEqual(jsonBodyLog['message'], genLogEvents[i]['message'])
+
+    def _checkJsonData(self, request, data):
+        bodyLogsList = request.body.splitlines()
+
+        genLogEvents = data['logEvents']
+
+        for i in xrange(BODYSIZE):
+            jsonBodyLog = json.loads(bodyLogsList[i])
+            logger.info("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}".format(json.loads(bodyLogsList[i])['message'],\
+                                                                                genLogEvents[i]['message'], i))
+
+            self.assertEqual(jsonBodyLog['timestamp'], genLogEvents[i]['timestamp'])
+            self.assertEqual(jsonBodyLog['id'], genLogEvents[i]['id'])
+            json_message = json.loads(genLogEvents[i]['message'])
+            for key, value in json_message.items():
+                self.assertEqual(jsonBodyLog[key], value)
 
     @httpretty.activate
     def test_bad_request(self):
         logger.info("TEST: test_bad_request")
-        event = self._generate_aws_logs_event()
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
                                 httpretty.Response(body = "first", status=400),
                                 httpretty.Response(body = "second", status=401),
@@ -107,7 +131,37 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_ok_request(self):
         logger.info("TEST: test_ok_request")
-        event = self._generate_aws_logs_event()
+        event = self._generate_aws_logs_event(self._random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
+
+        try:
+            handler(event['enc'],None)
+        except Exception:
+            assert True,"Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        self._checkData(request, event['dec'])
+
+    @httpretty.activate
+    def test_json_type_request(self):
+        logger.info("TEST: test_json_request")
+        os.environ['TYPE'] = "JSON"
+        event = self._generate_aws_logs_event(self._json_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
+
+        try:
+            handler(event['enc'],None)
+        except Exception:
+            assert True,"Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        self._checkJsonData(request, event['dec'])
+
+    @httpretty.activate
+    def test_malformed_json_type_request(self):
+        logger.info("TEST: test_json_request")
+        os.environ['TYPE'] = "JSON"
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
 
         try:
@@ -121,7 +175,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_retry_request(self):
         logger.info("TEST: test_retry_request")
-        event = self._generate_aws_logs_event()
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
                                 httpretty.Response(body = "1st Fail", status=500),
                                 httpretty.Response(body = "2nd Fail", status=500),
