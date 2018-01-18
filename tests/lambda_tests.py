@@ -46,14 +46,14 @@ class TestLambdaFunction(unittest.TestCase):
             })
 
     # Create aws data json format string
-    def _data_body_builder(self, message_builder):
+    def _data_body_builder(self, message_builder, bodysize):
         dataBody = {}
         dataBody['logStream'] = 'TestStream'
         dataBody['messageType'] = 'DATA_MESSAGE'
 
         dataBody['logEvents'] = []
         # Each awslog event contain BODYSIZE messages
-        for i in range(BODYSIZE):
+        for i in range(bodysize):
             log = { "timestamp" : i,
                     "message" : message_builder(),
                     "id" : i
@@ -66,11 +66,11 @@ class TestLambdaFunction(unittest.TestCase):
         return dataBody
 
     # Encrypt and zip the data as awslog format require
-    def _generate_aws_logs_event(self, message_builder):
+    def _generate_aws_logs_event(self, message_builder, bodysize=BODYSIZE):
         event = {}
         event['awslogs'] = {}
 
-        data = self._data_body_builder(message_builder)
+        data = self._data_body_builder(message_builder, bodysize)
         zipTextFile = StringIO()
         zipper = gzip.GzipFile(mode='wb', fileobj=zipTextFile)
         zipper.write(json.dumps(data))
@@ -158,21 +158,6 @@ class TestLambdaFunction(unittest.TestCase):
         self._checkJsonData(request, event['dec'])
 
     @httpretty.activate
-    def test_malformed_json_type_request(self):
-        logger.info("TEST: test_json_request")
-        os.environ['TYPE'] = "JSON"
-        event = self._generate_aws_logs_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
-
-        try:
-            handler(event['enc'],None)
-        except Exception:
-            assert True,"Failed on handling a legit event. Expected status_code = 200"
-
-        request = httpretty.HTTPretty.last_request
-        self._checkData(request, event['dec'])
-
-    @httpretty.activate
     def test_retry_request(self):
         logger.info("TEST: test_retry_request")
         event = self._generate_aws_logs_event(self._random_string_builder)
@@ -219,6 +204,21 @@ class TestLambdaFunction(unittest.TestCase):
         with self.assertRaises(TypeError):
             handler(event,None)
         logger.info("Catched the correct exception, wrong format message")
+
+    @httpretty.activate
+    def test_large_body(self):
+        logger.info("TEST: test_large_body")
+        bodysize = 2000
+        event = self._generate_aws_logs_event(self._random_string_builder, bodysize)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
+        try:
+            handler(event['enc'],None)
+        except Exception:
+            assert True,"Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        lastBulkLength = len(request.body.splitlines())
+        assert lastBulkLength <= 2000, "Logs were not fragmented"
 
 if __name__ == '__main__':
     unittest.main()

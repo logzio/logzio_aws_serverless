@@ -4,10 +4,13 @@ import gzip
 import json
 import logging
 import os
+import sys
 import time
 import urllib2
 from base64 import b64decode
 from StringIO import StringIO
+
+MAX_BULK_SIZE_IN_BYTES = 1 * 1024 * 1024  # 1 MB
 
 # set logger
 logger = logging.getLogger()
@@ -17,12 +20,13 @@ logger.setLevel(logging.INFO)
 def shouldRetry(e):
     if e.code == 400:
         logger.error("Got 400 code from Logz.io. This means that some of your logs are too big, or badly formatted. response: {0}".format(e.reason))
+        return False
     elif e.code == 401:
         logger.error("You are not authorized with Logz.io! Token OK? dropping logs...")
+        return False
     else:
         logger.error("Got {0} while sending logs to Logz.io, response: {1}".format(e.code, e.reason))
         return True
-    return False
 
 # send in bulk JSONs object to logzio
 def sendToLogzio(jsonStrLogsList,logzioUrl):
@@ -63,6 +67,7 @@ def lambda_handler(event, context):
 
     logger.info("About to send {} logs".format(len(awsLogsData['logEvents'])))
     jsonStrLogsList =[]
+    currentSize = 0
     for log in awsLogsData['logEvents']:
         if not isinstance(log, collections.Mapping):
             raise TypeError("Expected log inside logEvents to be a Dict but found another type")
@@ -85,5 +90,11 @@ def lambda_handler(event, context):
                 pass
 
         jsonStrLogsList.append(json.dumps(log))
+        currentSize += sys.getsizeof(log)
+        if currentSize >= MAX_BULK_SIZE_IN_BYTES:
+            sendToLogzio(jsonStrLogsList, logzioUrl)
+            jsonStrLogsList = []
+            currentSize = 0
 
-    sendToLogzio(jsonStrLogsList,logzioUrl)
+    if jsonStrLogsList:
+        sendToLogzio(jsonStrLogsList, logzioUrl)
