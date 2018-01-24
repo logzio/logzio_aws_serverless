@@ -1,5 +1,4 @@
 import collections
-import datetime
 import gzip
 import json
 import logging
@@ -37,7 +36,6 @@ def sendToLogzio(jsonStrLogsList,logzioUrl):
         request = urllib2.Request(logzioUrl, data='\n'.join(jsonStrLogsList), headers=headers)
         try:
             response = urllib2.urlopen(request)
-            statusCode = response.getcode()
             logger.info("Successfully sent bulk of " + str(len(jsonStrLogsList)) + " logs to Logz.io!")
             return
         except (IOError) as e:
