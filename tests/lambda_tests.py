@@ -1,5 +1,4 @@
 import base64
-import datetime
 import gzip
 import httpretty
 import json
@@ -21,6 +20,12 @@ STRINGLEN = 10
 fileConfig('tests/logging_config.ini')
 logger = logging.getLogger(__name__)
 
+
+def _random_string_builder():
+    s = string.lowercase + string.digits
+    return ''.join(random.sample(s, STRINGLEN))
+
+
 class TestLambdaFunction(unittest.TestCase):
     """ Unit testing logzio lambda function """
 
@@ -30,11 +35,6 @@ class TestLambdaFunction(unittest.TestCase):
         os.environ['TOKEN'] = "123456789"
         os.environ['TYPE'] = "vpcflow"
         self._logzioUrl = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
-
-    # Build random string with STRINGLEN chars
-    def _random_string_builder(self):
-        s = string.lowercase + string.digits
-        return ''.join(random.sample(s, STRINGLEN))
 
     # Build random string with STRINGLEN chars
     def _json_string_builder(self):
@@ -47,11 +47,8 @@ class TestLambdaFunction(unittest.TestCase):
 
     # Create aws data json format string
     def _data_body_builder(self, message_builder, bodysize):
-        dataBody = {}
-        dataBody['logStream'] = 'TestStream'
-        dataBody['messageType'] = 'DATA_MESSAGE'
+        dataBody = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
 
-        dataBody['logEvents'] = []
         # Each awslog event contain BODYSIZE messages
         for i in range(bodysize):
             log = { "timestamp" : i,
@@ -67,8 +64,7 @@ class TestLambdaFunction(unittest.TestCase):
 
     # Encrypt and zip the data as awslog format require
     def _generate_aws_logs_event(self, message_builder, bodysize=BODYSIZE):
-        event = {}
-        event['awslogs'] = {}
+        event = {'awslogs': {}}
 
         data = self._data_body_builder(message_builder, bodysize)
         zipTextFile = StringIO()
@@ -114,7 +110,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_bad_request(self):
         logger.info("TEST: test_bad_request")
-        event = self._generate_aws_logs_event(self._random_string_builder)
+        event = self._generate_aws_logs_event(_random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
                                 httpretty.Response(body = "first", status=400),
                                 httpretty.Response(body = "second", status=401),
@@ -131,7 +127,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_ok_request(self):
         logger.info("TEST: test_ok_request")
-        event = self._generate_aws_logs_event(self._random_string_builder)
+        event = self._generate_aws_logs_event(_random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
 
         try:
@@ -145,7 +141,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_json_type_request(self):
         logger.info("TEST: test_json_request")
-        os.environ['TYPE'] = "JSON"
+        os.environ['FORMAT'] = "JSON"
         event = self._generate_aws_logs_event(self._json_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
 
@@ -160,7 +156,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_retry_request(self):
         logger.info("TEST: test_retry_request")
-        event = self._generate_aws_logs_event(self._random_string_builder)
+        event = self._generate_aws_logs_event(_random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
                                 httpretty.Response(body = "1st Fail", status=500),
                                 httpretty.Response(body = "2nd Fail", status=500),
@@ -178,13 +174,9 @@ class TestLambdaFunction(unittest.TestCase):
     def test_wrong_format_event(self):
         logger.info("TEST: test_wrong_format_event")
 
-        event = {}
-        event['awslogs'] = {}
-        dataBody = {}
-        dataBody['logStream'] = 'TestStream'
-        dataBody['messageType'] = 'DATA_MESSAGE'
+        event = {'awslogs': {}}
+        dataBody = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
 
-        dataBody['logEvents'] = []
         # Adding wrong format log
         log = "{'timestamp' : '10', 'message' : 'wrong_format', 'id' : '10'}"
         dataBody['logEvents'].append(log)
@@ -209,7 +201,7 @@ class TestLambdaFunction(unittest.TestCase):
     def test_large_body(self):
         logger.info("TEST: test_large_body")
         bodysize = 2000
-        event = self._generate_aws_logs_event(self._random_string_builder, bodysize)
+        event = self._generate_aws_logs_event(_random_string_builder, bodysize)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
         try:
             handler(event['enc'],None)
