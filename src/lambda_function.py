@@ -16,10 +16,13 @@ MAX_BULK_SIZE_IN_BYTES = 1 * 1024 * 1024  # 1 MB
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 # print correct response status code and return True if we need to retry
 def shouldRetry(e):
     if e.code == 400:
-        logger.error("Got 400 code from Logz.io. This means that some of your logs are too big, or badly formatted. response: {0}".format(e.reason))
+        logger.error(
+            "Got 400 code from Logz.io. This means that some of your logs are too big, or badly formatted. response: {0}".format(
+                e.reason))
         return False
     elif e.code == 401:
         logger.error("You are not authorized with Logz.io! Token OK? dropping logs...")
@@ -28,8 +31,9 @@ def shouldRetry(e):
         logger.error("Got {0} while sending logs to Logz.io, response: {1}".format(e.code, e.reason))
         return True
 
+
 # send in bulk JSONs object to logzio
-def sendToLogzio(jsonStrLogsList,logzioUrl):
+def sendToLogzio(jsonStrLogsList, logzioUrl):
     headers = {"Content-type": "application/json"}
     maxRetries = 3
     sleepBetweenRetries = 5
@@ -37,17 +41,17 @@ def sendToLogzio(jsonStrLogsList,logzioUrl):
         request = urllib2.Request(logzioUrl, data='\n'.join(jsonStrLogsList), headers=headers)
         try:
             response = urllib2.urlopen(request)
-            statusCode = response.getcode()
             logger.info("Successfully sent bulk of " + str(len(jsonStrLogsList)) + " logs to Logz.io!")
             return
         except (IOError) as e:
-            if (shouldRetry(e)):
+            if shouldRetry(e):
                 logger.info("Failure is retriable - Trying {} more times".format(currTry))
                 time.sleep(sleepBetweenRetries)
             else:
                 raise IOError("Failed to send logs")
 
     raise RuntimeError("Retries attempts exhausted. Failed sending to Logz.io")
+
 
 def extractAwsLogsData(event):
     try:
@@ -66,7 +70,7 @@ def lambda_handler(event, context):
     awsLogsData = extractAwsLogsData(event)
 
     logger.info("About to send {} logs".format(len(awsLogsData['logEvents'])))
-    jsonStrLogsList =[]
+    jsonStrLogsList = []
     currentSize = 0
     for log in awsLogsData['logEvents']:
         if not isinstance(log, collections.Mapping):
@@ -81,13 +85,18 @@ def lambda_handler(event, context):
         log['owner'] = awsLogsData['owner']
         log['logGroup'] = awsLogsData['logGroup']
 
-        if os.environ['TYPE'].lower() == 'json':
-            try:
-                json_object = json.loads(log['message'])
-                for key, value in json_object.items():
-                    log[key] = value
-            except ValueError:
-                pass
+        # If FORMAT is json treat message as a json
+        try:
+            if os.environ['FORMAT'].lower() == 'json':
+                try:
+                    json_object = json.loads(log['message'])
+                    for key, value in json_object.items():
+                        log[key] = value
+                except ValueError:
+                    pass
+        except KeyError:
+            # No FORMAT - treat it as a string
+            pass
 
         jsonStrLogsList.append(json.dumps(log))
         currentSize += sys.getsizeof(log)
