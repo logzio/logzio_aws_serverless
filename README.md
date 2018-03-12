@@ -1,6 +1,7 @@
 # CloudWatch Logs Shipper - Lambda
 
 This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP.
+For detailed information you can check this blog [post](https://logz.io/blog/cloudwatch-lambda-shipper/)
 
 ## Step 1 - Creating the Lambda Function
 
