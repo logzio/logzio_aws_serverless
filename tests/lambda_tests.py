@@ -5,16 +5,17 @@ import json
 import logging
 import os
 import random
+import src.lambda_function as worker
 import string
 import unittest
 
 from logging.config import fileConfig
-from src.lambda_function import lambda_handler as handler
+from src.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
 from StringIO import StringIO
 
-## CONST
-BODYSIZE = 10
-STRINGLEN = 10
+# CONST
+BODY_SIZE = 10
+STRING_LEN = 10
 
 # create logger assuming running from ./run script
 fileConfig('tests/logging_config.ini')
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def _random_string_builder():
     s = string.lowercase + string.digits
-    return ''.join(random.sample(s, STRINGLEN))
+    return ''.join(random.sample(s, STRING_LEN))
 
 
 class TestLambdaFunction(unittest.TestCase):
@@ -36,181 +37,250 @@ class TestLambdaFunction(unittest.TestCase):
         os.environ['TYPE'] = "vpcflow"
         self._logzioUrl = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
 
-    # Build random string with STRINGLEN chars
-    def _json_string_builder(self):
+    @staticmethod
+    # Build random string with STRING_LEN chars
+    def _json_string_builder():
         s = string.lowercase + string.digits
         return json.dumps({
                 'field1': 'abcd',
                 'field2': 'efgh',
-                'message': ''.join(random.sample(s, STRINGLEN))
+                'message': ''.join(random.sample(s, STRING_LEN))
             })
 
+    @staticmethod
     # Create aws data json format string
-    def _data_body_builder(self, message_builder, bodysize):
-        dataBody = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
+    def _data_body_builder(message_builder, body_size):
+        data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
 
-        # Each awslog event contain BODYSIZE messages
-        for i in range(bodysize):
-            log = { "timestamp" : i,
-                    "message" : message_builder(),
-                    "id" : i
-            }
-            dataBody['logEvents'].append(log)
+        # Each awslog event contain BODY_SIZE messages
+        for i in range(body_size):
+            log = {"timestamp": "i", "message": message_builder(), "id": i}
+            data_body['logEvents'].append(log)
 
-        dataBody['owner'] = 'Test'
-        dataBody['subscriptionFilters'] = ['TestFilters']
-        dataBody['logGroup'] = 'TestlogGroup'
-        return dataBody
+        data_body['owner'] = 'Test'
+        data_body['subscriptionFilters'] = ['TestFilters']
+        data_body['logGroup'] = 'TestlogGroup'
+        return data_body
 
     # Encrypt and zip the data as awslog format require
-    def _generate_aws_logs_event(self, message_builder, bodysize=BODYSIZE):
+    def _generate_aws_logs_event(self, message_builder, body_size=BODY_SIZE):
         event = {'awslogs': {}}
 
-        data = self._data_body_builder(message_builder, bodysize)
-        zipTextFile = StringIO()
-        zipper = gzip.GzipFile(mode='wb', fileobj=zipTextFile)
+        data = self._data_body_builder(message_builder, body_size)
+        zip_text_file = StringIO()
+        zipper = gzip.GzipFile(mode='wb', fileobj=zip_text_file)
         zipper.write(json.dumps(data))
         zipper.close()
-        encData =  base64.b64encode(zipTextFile.getvalue())
+        enc_data = base64.b64encode(zip_text_file.getvalue())
 
-        event['awslogs']['data'] = encData
+        event['awslogs']['data'] = enc_data
         return {'dec': data, 'enc': event}
 
     # Verify the data the moke got and the data we created are equal
-    def _checkData(self, request, data):
-        bodyLogsList = request.body.splitlines()
+    def _check_data(self, request, data, context):
+        body_logs_list = request.body.splitlines()
 
-        genLogEvents = data['logEvents']
+        gen_log_events = data['logEvents']
 
-        for i in xrange(BODYSIZE):
-            jsonBodyLog = json.loads(bodyLogsList[i])
-            logger.info("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}".format(json.loads(bodyLogsList[i])['message'],\
-                                                                                genLogEvents[i]['message'], i))
+        for i in xrange(BODY_SIZE):
+            json_body_log = json.loads(body_logs_list[i])
+            logger.info("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
+                        .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
 
-            self.assertEqual(jsonBodyLog['timestamp'], genLogEvents[i]['timestamp'])
-            self.assertEqual(jsonBodyLog['id'], genLogEvents[i]['id'])
-            self.assertEqual(jsonBodyLog['message'], genLogEvents[i]['message'])
+            print(json_body_log)
+            self.assertEqual(json_body_log['function_version'], context.function_version)
+            self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
+            self.assertEqual(json_body_log['memory_limit_in_mb'], context.memory_limit_in_mb)
+            self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
+            self.assertEqual(json_body_log['id'], gen_log_events[i]['id'])
+            self.assertEqual(json_body_log['message'], gen_log_events[i]['message'])
 
-    def _checkJsonData(self, request, data):
-        bodyLogsList = request.body.splitlines()
+    def _check_json_data(self, request, data, context):
+        body_logs_list = request.body.splitlines()
 
-        genLogEvents = data['logEvents']
+        gen_log_events = data['logEvents']
 
-        for i in xrange(BODYSIZE):
-            jsonBodyLog = json.loads(bodyLogsList[i])
-            logger.info("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}".format(json.loads(bodyLogsList[i])['message'],\
-                                                                                genLogEvents[i]['message'], i))
+        for i in xrange(BODY_SIZE):
+            json_body_log = json.loads(body_logs_list[i])
+            logger.info("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
+                        .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
 
-            self.assertEqual(jsonBodyLog['timestamp'], genLogEvents[i]['timestamp'])
-            self.assertEqual(jsonBodyLog['id'], genLogEvents[i]['id'])
-            json_message = json.loads(genLogEvents[i]['message'])
+            self.assertEqual(json_body_log['function_version'], context.function_version)
+            self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
+            self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
+            self.assertEqual(json_body_log['id'], gen_log_events[i]['id'])
+            json_message = json.loads(gen_log_events[i]['message'])
             for key, value in json_message.items():
-                self.assertEqual(jsonBodyLog[key], value)
+                self.assertEqual(json_body_log[key], value)
 
     @httpretty.activate
     def test_bad_request(self):
         logger.info("TEST: test_bad_request")
         event = self._generate_aws_logs_event(_random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
-                                httpretty.Response(body = "first", status=400),
-                                httpretty.Response(body = "second", status=401),
+                                httpretty.Response(body="first", status=400),
+                                httpretty.Response(body="second", status=401),
                             ])
 
-        with self.assertRaises(IOError):
-            handler(event['enc'],None)
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        with self.assertRaises(BadLogsException):
+            worker.lambda_handler(event['enc'], Context)
         logger.info("Catched the correct exception. Status code = 400")
 
-        with self.assertRaises(IOError):
-            handler(event['enc'],None)
+        with self.assertRaises(UnauthorizedAccessException):
+            worker.lambda_handler(event['enc'], Context)
         logger.info("Catched the correct exception. Status code = 401")
 
     @httpretty.activate
     def test_ok_request(self):
         logger.info("TEST: test_ok_request")
         event = self._generate_aws_logs_event(_random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
 
         try:
-            handler(event['enc'],None)
+            worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True,"Failed on handling a legit event. Expected status_code = 200"
+            assert True, "Failed on handling a legit event. Expected status_code = 200"
 
         request = httpretty.HTTPretty.last_request
-        self._checkData(request, event['dec'])
+        self._check_data(request, event['dec'], Context)
 
     @httpretty.activate
     def test_json_type_request(self):
         logger.info("TEST: test_json_request")
         os.environ['FORMAT'] = "JSON"
         event = self._generate_aws_logs_event(self._json_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
 
         try:
-            handler(event['enc'],None)
+            worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True,"Failed on handling a legit event. Expected status_code = 200"
+            assert True, "Failed on handling a legit event. Expected status_code = 200"
 
         request = httpretty.HTTPretty.last_request
-        self._checkJsonData(request, event['dec'])
+        self._check_json_data(request, event['dec'], Context)
 
     @httpretty.activate
     def test_retry_request(self):
         logger.info("TEST: test_retry_request")
         event = self._generate_aws_logs_event(_random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
-                                httpretty.Response(body = "1st Fail", status=500),
-                                httpretty.Response(body = "2nd Fail", status=500),
-                                httpretty.Response(body = "3rd Success", status=200)
+                                httpretty.Response(body="1st Fail", status=500),
+                                httpretty.Response(body="2nd Fail", status=500),
+                                httpretty.Response(body="3rd Success", status=200)
                             ])
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
         try:
-            handler(event['enc'],None)
+            worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True,"Should have succeeded on last try"
+            assert True, "Should have succeeded on last try"
 
         request = httpretty.HTTPretty.last_request
-        self._checkData(request, event['dec'])
+        self._check_data(request, event['dec'], Context)
+
+    @httpretty.activate
+    def test_retry_limit(self):
+        logger.info("TEST: test_retry_request")
+        event = self._generate_aws_logs_event(_random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        with self.assertRaises(MaxRetriesException):
+            worker.lambda_handler(event['enc'], Context)
+
+    @httpretty.activate
+    def test_bad_url(self):
+        logger.info("TEST: test_retry_request")
+        event = self._generate_aws_logs_event(_random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=404)
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        with self.assertRaises(UnknownURL):
+            worker.lambda_handler(event['enc'], Context)
 
     @httpretty.activate
     def test_wrong_format_event(self):
         logger.info("TEST: test_wrong_format_event")
 
         event = {'awslogs': {}}
-        dataBody = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
+        data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
 
         # Adding wrong format log
         log = "{'timestamp' : '10', 'message' : 'wrong_format', 'id' : '10'}"
-        dataBody['logEvents'].append(log)
-        dataBody['owner'] = 'Test'
-        dataBody['subscriptionFilters'] = ['TestFilters']
-        dataBody['logGroup'] = 'TestlogGroup'
+        data_body['logEvents'].append(log)
+        data_body['owner'] = 'Test'
+        data_body['subscriptionFilters'] = ['TestFilters']
+        data_body['logGroup'] = 'TestlogGroup'
 
-        zipTextFile = StringIO()
-        zipper = gzip.GzipFile(mode='wb', fileobj=zipTextFile)
-        zipper.write(json.dumps(dataBody))
+        zip_text_file = StringIO()
+        zipper = gzip.GzipFile(mode='wb', fileobj=zip_text_file)
+        zipper.write(json.dumps(data_body))
         zipper.close()
-        encData =  base64.b64encode(zipTextFile.getvalue())
+        enc_data = base64.b64encode(zip_text_file.getvalue())
 
-        event['awslogs']['data'] = encData
+        event['awslogs']['data'] = enc_data
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
 
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
         with self.assertRaises(TypeError):
-            handler(event,None)
+            worker.lambda_handler(event, Context)
         logger.info("Catched the correct exception, wrong format message")
 
     @httpretty.activate
     def test_large_body(self):
         logger.info("TEST: test_large_body")
-        bodysize = 2000
-        event = self._generate_aws_logs_event(_random_string_builder, bodysize)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body = "first", status=200, content_type="application/json")
+        body_size = 2000
+        event = self._generate_aws_logs_event(_random_string_builder, body_size)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
         try:
-            handler(event['enc'],None)
+            worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True,"Failed on handling a legit event. Expected status_code = 200"
+            assert True, "Failed on handling a legit event. Expected status_code = 200"
 
         request = httpretty.HTTPretty.last_request
-        lastBulkLength = len(request.body.splitlines())
-        assert lastBulkLength <= 2000, "Logs were not fragmented"
+        last_bulk_length = len(request.body.splitlines())
+        assert last_bulk_length <= 2000, "Logs were not fragmented"
+
 
 if __name__ == '__main__':
     unittest.main()

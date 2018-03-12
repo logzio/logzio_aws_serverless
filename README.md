@@ -13,16 +13,16 @@ This is an AWS Lambda function that collects CloudWatch logs and sends them to L
 4. Hit the **Create Function** button in the bottom-right corner of the page.
 
 ## Step 2 - Uploading and configuring the Logz.io Lambda shipper
-
-1. In the Function Code section, open the Code entry type menu, and select *Edit code inline*.
-2. Copy the Lambda function in this repository into the editor.
-3. In the Environment variables section, set your Logz.io token, URL and log type:
+1. Zip 'lambda_function.py' and 'shipper.py': zip logzio-cloudwatch-log-shipper lambda_function.py shipper.py
+2. In the Function Code section, open the Code entry type menu, and select *Upload a .ZIP file*.
+3. Select the zip you created at 1.
+4. In the Environment variables section, set your Logz.io token, URL and log type:
   - TOKEN: your Logz.io account token. Can be retrieved on the Settings page in the Logz.io UI.
   - TYPE: the log type you are going to use with this Lambda. Please note that you should create a new Lambda for each log type you are using. For a list of the log types we support, go [here]. 
   - FORMAT: 'JSON' is supported, if the 'FORMAT' JSON is set the lambda function will attempt to parse the message field as json and populate the event data with the parsed fields.
   - URL: the Logz.io listener URL. If you are in the EU region insert https://listener-eu.logz.io:8071. Otherwise, use https://listener.logz.io:8071. You can tell which region you are in by checking your login URL - *app.logz.io* means you are in the US. *app-eu.logz.io* means you are in the EU.
-4. In the Basic Settings section, we recommend to start by setting memory to 512(MB) and a 1(MIN) timeout, and then subsequently adjusting these values based on trial and error, and according to your Lambda usage.
-5. Leave the other settings as default
+5. In the Basic Settings section, we recommend to start by setting memory to 512(MB) and a 1(MIN) timeout, and then subsequently adjusting these values based on trial and error, and according to your Lambda usage.
+6. Leave the other settings as default
 
 ## Step 3 - Setting CloudWatch log event trigger
 1. Under Add triggers at the top of the page, select the CloudWatch Log trigger.
