@@ -1,108 +1,80 @@
-import collections
 import gzip
 import json
 import logging
 import os
-import sys
-import time
-import urllib2
-from base64 import b64decode
-from StringIO import StringIO
 
-MAX_BULK_SIZE_IN_BYTES = 1 * 1024 * 1024  # 1 MB
+from shipper import LogzioShipper
+from StringIO import StringIO
 
 # set logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-# print correct response status code and return True if we need to retry
-def shouldRetry(e):
-    if e.code == 400:
-        logger.error(
-            "Got 400 code from Logz.io. This means that some of your logs are too big, or badly formatted. response: {0}".format(
-                e.reason))
-        return False
-    elif e.code == 401:
-        logger.error("You are not authorized with Logz.io! Token OK? dropping logs...")
-        return False
-    else:
-        logger.error("Got {0} while sending logs to Logz.io, response: {1}".format(e.code, e.reason))
-        return True
-
-
-# send in bulk JSONs object to logzio
-def sendToLogzio(jsonStrLogsList, logzioUrl):
-    headers = {"Content-type": "application/json"}
-    maxRetries = 3
-    sleepBetweenRetries = 5
-    for currTry in reversed(xrange(maxRetries)):
-        request = urllib2.Request(logzioUrl, data='\n'.join(jsonStrLogsList), headers=headers)
-        try:
-            response = urllib2.urlopen(request)
-            logger.info("Successfully sent bulk of " + str(len(jsonStrLogsList)) + " logs to Logz.io!")
-            return
-        except (IOError) as e:
-            if shouldRetry(e):
-                logger.info("Failure is retriable - Trying {} more times".format(currTry))
-                time.sleep(sleepBetweenRetries)
-            else:
-                raise IOError("Failed to send logs")
-
-    raise RuntimeError("Retries attempts exhausted. Failed sending to Logz.io")
-
-
-def extractAwsLogsData(event):
+def _extract_aws_logs_data(event):
+    # type: (dict) -> dict
     try:
-        logsDataDecoded = event['awslogs']['data'].decode('base64')
-        logsDataUnzipped = gzip.GzipFile(fileobj=StringIO(logsDataDecoded)).read()
-        logsDataDict = json.loads(logsDataUnzipped)
-        return logsDataDict
+        logs_data_decoded = event['awslogs']['data'].decode('base64')
+        logs_data_unzipped = gzip.GzipFile(fileobj=StringIO(logs_data_decoded)).read()
+        logs_data_dict = json.loads(logs_data_unzipped)
+        return logs_data_dict
     except ValueError as e:
         logger.error("Got exception while loading json, message: {}".format(e))
         raise ValueError("Exception: json loads")
 
 
+def _parse_cloudwatch_log(log, aws_logs_data):
+    # type: (dict, dict) -> None
+    if '@timestamp' not in log:
+        log['@timestamp'] = str(log['timestamp'])
+        del log['timestamp']
+
+    log['message'] = log['message'].replace('\n', '')
+    log['logStream'] = aws_logs_data['logStream']
+    log['messageType'] = aws_logs_data['messageType']
+    log['owner'] = aws_logs_data['owner']
+    log['logGroup'] = aws_logs_data['logGroup']
+    log['function_version'] = aws_logs_data['function_version']
+    log['invoked_function_arn'] = aws_logs_data['invoked_function_arn']
+    log['memory_limit_in_mb'] = aws_logs_data['memory_limit_in_mb']
+
+    # If FORMAT is json treat message as a json
+    try:
+        if os.environ['FORMAT'].lower() == 'json':
+            json_object = json.loads(log['message'])
+            for key, value in json_object.items():
+                log[key] = value
+    except (KeyError, ValueError):
+        pass
+
+
+def _enrich_logs_data(aws_logs_data, context):
+    # type: (dict, 'LambdaContext') -> None
+    try:
+        aws_logs_data['function_version'] = context.function_version
+        aws_logs_data['invoked_function_arn'] = context.invoked_function_arn
+    except KeyError:
+        pass
+
+
 def lambda_handler(event, context):
-    logzioUrl = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
+    # type: (dict, 'LambdaContext') -> None
+    try:
+        logzio_url = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
+    except KeyError as e:
+        logger.error("Missing one of the environment variable: {}".format(e))
+        raise
 
-    awsLogsData = extractAwsLogsData(event)
+    aws_logs_data = _extract_aws_logs_data(event)
+    _enrich_logs_data(aws_logs_data, context)
+    shipper = LogzioShipper(logzio_url)
 
-    logger.info("About to send {} logs".format(len(awsLogsData['logEvents'])))
-    jsonStrLogsList = []
-    currentSize = 0
-    for log in awsLogsData['logEvents']:
-        if not isinstance(log, collections.Mapping):
-            raise TypeError("Expected log inside logEvents to be a Dict but found another type")
+    logger.info("About to send {} logs".format(len(aws_logs_data['logEvents'])))
+    for log in aws_logs_data['logEvents']:
+        if not isinstance(log, dict):
+            raise TypeError("Expected log inside logEvents to be a dict but found another type")
 
-        if '@timestamp' not in log:
-            log['@timestamp'] = str(log['timestamp'])
+        _parse_cloudwatch_log(log, aws_logs_data)
+        shipper.add(log)
 
-        log['message'] = log['message'].replace('\n', '')
-        log['logStream'] = awsLogsData['logStream']
-        log['messageType'] = awsLogsData['messageType']
-        log['owner'] = awsLogsData['owner']
-        log['logGroup'] = awsLogsData['logGroup']
-
-        # If FORMAT is json treat message as a json
-        try:
-            if os.environ['FORMAT'].lower() == 'json':
-                try:
-                    json_object = json.loads(log['message'])
-                    for key, value in json_object.items():
-                        log[key] = value
-                except ValueError:
-                    pass
-        except KeyError:
-            # No FORMAT - treat it as a string
-            pass
-
-        jsonStrLogsList.append(json.dumps(log))
-        currentSize += sys.getsizeof(log)
-        if currentSize >= MAX_BULK_SIZE_IN_BYTES:
-            sendToLogzio(jsonStrLogsList, logzioUrl)
-            jsonStrLogsList = []
-            currentSize = 0
-
-    if jsonStrLogsList:
-        sendToLogzio(jsonStrLogsList, logzioUrl)
+    shipper.flush()
