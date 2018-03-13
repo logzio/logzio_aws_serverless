@@ -36,7 +36,6 @@ def _parse_cloudwatch_log(log, aws_logs_data):
     log['logGroup'] = aws_logs_data['logGroup']
     log['function_version'] = aws_logs_data['function_version']
     log['invoked_function_arn'] = aws_logs_data['invoked_function_arn']
-    log['memory_limit_in_mb'] = aws_logs_data['memory_limit_in_mb']
 
     # If FORMAT is json treat message as a json
     try:
