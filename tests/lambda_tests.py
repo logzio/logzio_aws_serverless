@@ -90,7 +90,6 @@ class TestLambdaFunction(unittest.TestCase):
             print(json_body_log)
             self.assertEqual(json_body_log['function_version'], context.function_version)
             self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
-            self.assertEqual(json_body_log['memory_limit_in_mb'], context.memory_limit_in_mb)
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
             self.assertEqual(json_body_log['id'], gen_log_events[i]['id'])
             self.assertEqual(json_body_log['message'], gen_log_events[i]['message'])
