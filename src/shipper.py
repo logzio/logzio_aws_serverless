@@ -4,8 +4,6 @@ import sys
 import time
 import urllib2
 
-MAX_BULK_SIZE_IN_BYTES = 1 * 1024 * 1024  # 1 MB
-
 # set logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
