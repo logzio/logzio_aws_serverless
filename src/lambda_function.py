@@ -23,7 +23,7 @@ def _extract_aws_logs_data(event):
         raise ValueError("Exception: json loads")
 
 
-def _parse_cloudwatch_log(log, aws_logs_data):
+def _parse_cloudwatch_log(log, aws_logs_data, log_type):
     # type: (dict, dict) -> None
     if '@timestamp' not in log:
         log['@timestamp'] = str(log['timestamp'])
@@ -36,6 +36,7 @@ def _parse_cloudwatch_log(log, aws_logs_data):
     log['logGroup'] = aws_logs_data['logGroup']
     log['function_version'] = aws_logs_data['function_version']
     log['invoked_function_arn'] = aws_logs_data['invoked_function_arn']
+    log['type'] = log_type
 
     # If FORMAT is json treat message as a json
     try:
@@ -59,7 +60,8 @@ def _enrich_logs_data(aws_logs_data, context):
 def lambda_handler(event, context):
     # type: (dict, 'LambdaContext') -> None
     try:
-        logzio_url = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
+        logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
+        log_type = (os.environ['TYPE'])
     except KeyError as e:
         logger.error("Missing one of the environment variable: {}".format(e))
         raise
@@ -73,7 +75,7 @@ def lambda_handler(event, context):
         if not isinstance(log, dict):
             raise TypeError("Expected log inside logEvents to be a dict but found another type")
 
-        _parse_cloudwatch_log(log, aws_logs_data)
+        _parse_cloudwatch_log(log, aws_logs_data, log_type)
         shipper.add(log)
 
     shipper.flush()

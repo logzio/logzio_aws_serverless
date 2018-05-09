@@ -35,7 +35,7 @@ class TestLambdaFunction(unittest.TestCase):
         os.environ['URL'] = "https://listener.logz.io:8071"
         os.environ['TOKEN'] = "123456789"
         os.environ['TYPE'] = "vpcflow"
-        self._logzioUrl = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
+        self._logzioUrl = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
 
     @staticmethod
     # Build random string with STRING_LEN chars
@@ -93,6 +93,7 @@ class TestLambdaFunction(unittest.TestCase):
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
             self.assertEqual(json_body_log['id'], gen_log_events[i]['id'])
             self.assertEqual(json_body_log['message'], gen_log_events[i]['message'])
+            self.assertEqual(json_body_log['type'], os.environ['TYPE'])
 
     def _check_json_data(self, request, data, context):
         body_logs_list = request.body.splitlines()
@@ -108,6 +109,7 @@ class TestLambdaFunction(unittest.TestCase):
             self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
             self.assertEqual(json_body_log['id'], gen_log_events[i]['id'])
+            self.assertEqual(json_body_log['type'], os.environ['TYPE'])
             json_message = json.loads(gen_log_events[i]['message'])
             for key, value in json_message.items():
                 self.assertEqual(json_body_log[key], value)
