@@ -14,7 +14,9 @@ For detailed information you can check this blog [post](https://logz.io/blog/clo
 4. Hit the **Create Function** button in the bottom-right corner of the page.
 
 ## Step 2 - Uploading and configuring the Logz.io Lambda shipper
-1. Zip 'lambda_function.py' and 'shipper.py': zip logzio-cloudwatch-log-shipper lambda_function.py shipper.py
+1. Zip 'lambda_function.py' and 'shipper.py' with one of the following two options:
+  - `make build` will create the zip at 'dist/logzio-cloudwatch-log-shipper.zip'
+  - `zip logzio-cloudwatch-log-shipper lambda_function.py shipper.py`
 2. In the Function Code section, open the Code entry type menu, and select *Upload a .ZIP file*.
 3. Select the zip you created at 1.
 4. In the Environment variables section, set your Logz.io token, URL and log type:
