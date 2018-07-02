@@ -10,7 +10,7 @@ For detailed information you can check this blog [post](https://logz.io/blog/clo
 3. Select Author from scratch, and enter the following information:
   - Name -  enter a name for your new Lambda function. We suggest adding the log type to the name.
   - Runtime - from the drop-down menu, select Python 2.7 as the function’s runtime.
-  - Role - leave the default *Choose an existing role* selection, and under Existing role, select *lambda_basic_execution*
+  - Role - press on *Create new role from template(s)* , and under Existing role, select *Basic Edge Lambda permissions*
 4. Hit the **Create Function** button in the bottom-right corner of the page.
 
 ## Step 2 - Uploading and configuring the Logz.io Lambda shipper
