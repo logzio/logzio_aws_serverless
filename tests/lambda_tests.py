@@ -8,6 +8,7 @@ import random
 import src.lambda_function as worker
 import string
 import unittest
+import zlib
 
 from logging.config import fileConfig
 from src.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
@@ -36,6 +37,16 @@ class TestLambdaFunction(unittest.TestCase):
         os.environ['TOKEN'] = "123456789"
         os.environ['TYPE'] = "vpcflow"
         self._logzioUrl = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
+
+    def tearDown(self):
+        try:
+            del os.environ['FORMAT']
+        except KeyError:
+            pass
+        try:
+            del os.environ['COMPRESS']
+        except KeyError:
+            pass
 
     @staticmethod
     # Build random string with STRING_LEN chars
@@ -78,8 +89,13 @@ class TestLambdaFunction(unittest.TestCase):
 
     # Verify the data the moke got and the data we created are equal
     def _check_data(self, request, data, context):
-        body_logs_list = request.body.splitlines()
+        buf = StringIO(request.body)
+        try:
+            body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
+        except KeyError:
+            body = buf
 
+        body_logs_list = body.readlines()
         gen_log_events = data['logEvents']
 
         for i in xrange(BODY_SIZE):
@@ -150,6 +166,27 @@ class TestLambdaFunction(unittest.TestCase):
             worker.lambda_handler(event['enc'], Context)
         except Exception:
             assert True, "Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        self._check_data(request, event['dec'], Context)
+
+    @httpretty.activate
+    def test_ok_gzip_request(self):
+        logger.info("TEST: test_ok_gzip_request")
+        os.environ['COMPRESS'] = 'true'
+        event = self._generate_aws_logs_event(_random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            assert "Failed on handling a legit event. Expected status_code = 200"
 
         request = httpretty.HTTPretty.last_request
         self._check_data(request, event['dec'], Context)
