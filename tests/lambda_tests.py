@@ -8,7 +8,6 @@ import random
 import src.lambda_function as worker
 import string
 import unittest
-import zlib
 
 from logging.config import fileConfig
 from src.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
@@ -39,14 +38,10 @@ class TestLambdaFunction(unittest.TestCase):
         self._logzioUrl = "{0}/?token={1}&type={2}".format(os.environ['URL'], os.environ['TOKEN'], os.environ['TYPE'])
 
     def tearDown(self):
-        try:
+        if os.environ.get('FORMAT'):
             del os.environ['FORMAT']
-        except KeyError:
-            pass
-        try:
+        if os.environ.get('COMPRESS'):
             del os.environ['COMPRESS']
-        except KeyError:
-            pass
 
     @staticmethod
     # Build random string with STRING_LEN chars
@@ -165,7 +160,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Failed on handling a legit event. Expected status_code = 200"
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
         self._check_data(request, event['dec'], Context)
@@ -192,6 +187,31 @@ class TestLambdaFunction(unittest.TestCase):
         self._check_data(request, event['dec'], Context)
 
     @httpretty.activate
+    def test_gzip_typo_request(self):
+        logger.info("TEST: test_ok_gzip_request")
+        os.environ['COMPRESS'] = 'fakecompress'
+        event = self._generate_aws_logs_event(_random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            assert "Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        try:
+            gzip_header = request.headers["Content-Encoding"]
+            self.fail("Failed to send uncompressed logs with typo in compress env filed")
+        except KeyError:
+            pass
+
+    @httpretty.activate
     def test_json_type_request(self):
         logger.info("TEST: test_json_request")
         os.environ['FORMAT'] = "JSON"
@@ -207,7 +227,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Failed on handling a legit event. Expected status_code = 200"
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
         self._check_json_data(request, event['dec'], Context)
@@ -230,7 +250,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Should have succeeded on last try"
+            self.fail("Should have succeeded on last try")
 
         request = httpretty.HTTPretty.last_request
         self._check_data(request, event['dec'], Context)
@@ -311,7 +331,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Failed on handling a legit event. Expected status_code = 200"
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
         last_bulk_length = len(request.body.splitlines())

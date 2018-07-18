@@ -22,7 +22,7 @@ For detailed information you can check this blog [post](https://logz.io/blog/clo
   - TYPE: the log type you are going to use with this Lambda. Please note that you should create a new Lambda for each log type you are using. For a list of the log types we support, go [here]. 
   - FORMAT: 'JSON' is supported, if the 'FORMAT' JSON is set the lambda function will attempt to parse the message field as json and populate the event data with the parsed fields.
   - URL: the Logz.io listener URL. If you are in the EU region insert https://listener-eu.logz.io:8071. Otherwise, use https://listener.logz.io:8071. You can tell which region you are in by checking your login URL - *app.logz.io* means you are in the US. *app-eu.logz.io* means you are in the EU.
-  - COMPRESS: if set to 'yes', 'true', '1', or 'yes' the Lambda will send the logs compressed. default or non-exist is no compression.
+  - COMPRESS: if set to 'true' the Lambda will send the logs compressed. default or non-exist is no compression.
 5. In the Basic Settings section, we recommend to start by setting memory to 512(MB) and a 1(MIN) timeout, and then subsequently adjusting these values based on trial and error, and according to your Lambda usage.
 6. Leave the other settings as default
 
