@@ -39,6 +39,12 @@ class GzipLogRequest(object):
         self._writer = gzip.GzipFile(mode='wb', fileobj=self._logs)
         self._http_headers = {"Content-Encoding": "gzip", "Content-type": "application/json"}
 
+    def __len__(self):
+        return self._logs_counter
+
+    def __str__(self):
+        return self._logs.getvalue()
+
     def write(self, log):
         self._writer.write("\n" + log) if self._decompress_size else self._writer.write(log)
         self._decompress_size += sys.getsizeof(log)
@@ -66,14 +72,8 @@ class GzipLogRequest(object):
     def flush(self):
         self._writer.flush()
 
-    def to_string(self):
-        return self._logs.getvalue()
-
     def http_headers(self):
         return self._http_headers
-
-    def len(self):
-        return self._logs_counter
 
 
 class StringLogRequest(object):
@@ -83,6 +83,12 @@ class StringLogRequest(object):
         self._size = 0
         self._logs = []
         self._http_headers = {"Content-type": "application/json"}
+
+    def __len__(self):
+        return len(self._logs)
+
+    def __str__(self):
+        return '\n'.join(self._logs)
 
     def write(self, log):
         self._logs.append(log)
@@ -104,14 +110,8 @@ class StringLogRequest(object):
     def flush(self):
         pass
 
-    def to_string(self):
-        return '\n'.join(self._logs)
-
     def http_headers(self):
         return self._http_headers
-
-    def len(self):
-        return len(self._logs)
 
 
 class LogzioShipper(object):
@@ -187,12 +187,12 @@ class LogzioShipper(object):
         @LogzioShipper.retry
         def do_request():
             self._logs.close()
-            request = urllib2.Request(self._logzio_url, data=self._logs.to_string(), headers=self._logs.http_headers())
+            request = urllib2.Request(self._logzio_url, data=str(self._logs), headers=self._logs.http_headers())
             return urllib2.urlopen(request)
 
         try:
             do_request()
-            logger.info("Successfully sent bulk of {} logs to Logz.io!".format(self._logs.len()))
+            logger.info("Successfully sent bulk of {} logs to Logz.io!".format(len(self._logs)))
         except MaxRetriesException:
             logger.error('Retry limit reached. Failed to send log entry.')
             raise MaxRetriesException()
@@ -208,4 +208,7 @@ class LogzioShipper(object):
             raise UnknownURL()
         except urllib2.HTTPError as e:
             logger.error("Unexpected error while trying to send logs: {}".format(e))
+            raise
+        except Exception as e:
+            logger.error(e)
             raise
