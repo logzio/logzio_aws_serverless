@@ -37,6 +37,12 @@ class TestLambdaFunction(unittest.TestCase):
         os.environ['TYPE'] = "vpcflow"
         self._logzioUrl = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
 
+    def tearDown(self):
+        if os.environ.get('FORMAT'):
+            del os.environ['FORMAT']
+        if os.environ.get('COMPRESS'):
+            del os.environ['COMPRESS']
+
     @staticmethod
     # Build random string with STRING_LEN chars
     def _json_string_builder():
@@ -78,8 +84,13 @@ class TestLambdaFunction(unittest.TestCase):
 
     # Verify the data the moke got and the data we created are equal
     def _check_data(self, request, data, context):
-        body_logs_list = request.body.splitlines()
+        buf = StringIO(request.body)
+        try:
+            body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
+        except KeyError:
+            body = buf
 
+        body_logs_list = body.readlines()
         gen_log_events = data['logEvents']
 
         for i in xrange(BODY_SIZE):
@@ -151,10 +162,56 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Failed on handling a legit event. Expected status_code = 200"
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
         self._check_data(request, event['dec'], Context)
+
+    @httpretty.activate
+    def test_ok_gzip_request(self):
+        logger.info("TEST: test_ok_gzip_request")
+        os.environ['COMPRESS'] = 'true'
+        event = self._generate_aws_logs_event(_random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            assert "Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        self._check_data(request, event['dec'], Context)
+
+    @httpretty.activate
+    def test_gzip_typo_request(self):
+        logger.info("TEST: test_ok_gzip_request")
+        os.environ['COMPRESS'] = 'fakecompress'
+        event = self._generate_aws_logs_event(_random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+
+        class Context(object):
+            function_version = 1
+            invoked_function_arn = 1
+            memory_limit_in_mb = 128
+
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            assert "Failed on handling a legit event. Expected status_code = 200"
+
+        request = httpretty.HTTPretty.last_request
+        try:
+            gzip_header = request.headers["Content-Encoding"]
+            self.fail("Failed to send uncompressed logs with typo in compress env filed")
+        except KeyError:
+            pass
 
     @httpretty.activate
     def test_json_type_request(self):
@@ -172,7 +229,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Failed on handling a legit event. Expected status_code = 200"
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
         self._check_json_data(request, event['dec'], Context)
@@ -195,7 +252,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Should have succeeded on last try"
+            self.fail("Should have succeeded on last try")
 
         request = httpretty.HTTPretty.last_request
         self._check_data(request, event['dec'], Context)
@@ -276,7 +333,7 @@ class TestLambdaFunction(unittest.TestCase):
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
-            assert True, "Failed on handling a legit event. Expected status_code = 200"
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
         last_bulk_length = len(request.body.splitlines())
