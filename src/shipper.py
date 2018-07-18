@@ -5,10 +5,9 @@ import sys
 import time
 import urllib2
 import StringIO
-
-# set logger
 import os
 
+# set logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
