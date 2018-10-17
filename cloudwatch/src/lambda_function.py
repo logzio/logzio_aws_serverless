@@ -3,7 +3,7 @@ import json
 import logging
 import os
 
-from shipper import LogzioShipper
+from shipper.shipper import LogzioShipper
 from StringIO import StringIO
 
 # set logger
