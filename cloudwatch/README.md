@@ -17,7 +17,7 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 
 1. On your machine, zip 'lambda_function.py' and 'shipper.py' with one of these options:
     - `make build` creates the zip at 'dist/logzio-cloudwatch-log-shipper.zip'
-    - `zip logzio-cloudwatch-log-shipper lambda_function.py shipper.py`
+    - `zip logzio-cloudwatch-log-shipper lambda_function.py ../../shipper/shipper.py`
 2. In the **Function code** section of Lambda, choose **Upload a .ZIP file** from the **Code entry type list**.
 3. Click **Upload**, and choose the zip you created on your machine.
 4. In the **Environment variables** section, set your Logz.io account token, URL, and log type:

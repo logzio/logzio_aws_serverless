@@ -5,20 +5,19 @@ import json
 import logging
 import os
 import random
-import src.lambda_function as worker
+import cloudwatch.src.lambda_function as worker
 import string
 import unittest
 
 from logging.config import fileConfig
-from src.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
+from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
 from StringIO import StringIO
 
 # CONST
 BODY_SIZE = 10
 STRING_LEN = 10
 
-# create logger assuming running from ./run script
-fileConfig('tests/logging_config.ini')
+fileConfig('logging_config.ini')
 logger = logging.getLogger(__name__)
 
 
