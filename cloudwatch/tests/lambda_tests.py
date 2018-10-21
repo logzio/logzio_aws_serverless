@@ -101,7 +101,6 @@ class TestLambdaFunction(unittest.TestCase):
             json_body_log = json.loads(body_logs_list[i])
             logger.debug("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
                         .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
-
             self.assertEqual(json_body_log['function_version'], context.function_version)
             self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
@@ -219,7 +218,6 @@ class TestLambdaFunction(unittest.TestCase):
     def test_retry_limit(self):
         event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
-
         with self.assertRaises(MaxRetriesException):
             worker.lambda_handler(event['enc'], Context)
 
@@ -227,7 +225,6 @@ class TestLambdaFunction(unittest.TestCase):
     def test_bad_url(self):
         event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=404)
-
         with self.assertRaises(UnknownURL):
             worker.lambda_handler(event['enc'], Context)
 
