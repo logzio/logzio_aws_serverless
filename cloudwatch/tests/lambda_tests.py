@@ -21,14 +21,14 @@ fileConfig('logging_config.ini')
 logger = logging.getLogger(__name__)
 
 
-def _random_string_builder():
-    s = string.lowercase + string.digits
-    return ''.join(random.sample(s, STRING_LEN))
+class Context(object):
+    function_version = 1
+    invoked_function_arn = 1
+    memory_limit_in_mb = 128
 
 
 class TestLambdaFunction(unittest.TestCase):
     """ Unit testing logzio lambda function """
-
     def setUp(self):
         # Set os.environ for tests
         os.environ['URL'] = "https://listener.logz.io:8071"
@@ -51,6 +51,11 @@ class TestLambdaFunction(unittest.TestCase):
                 'field2': 'efgh',
                 'message': ''.join(random.sample(s, STRING_LEN))
             })
+
+    @staticmethod
+    def _random_string_builder():
+        s = string.lowercase + string.digits
+        return ''.join(random.sample(s, STRING_LEN))
 
     @staticmethod
     # Create aws data json format string
@@ -81,7 +86,7 @@ class TestLambdaFunction(unittest.TestCase):
         event['awslogs']['data'] = enc_data
         return {'dec': data, 'enc': event}
 
-    # Verify the data the moke got and the data we created are equal
+    # Verify the data
     def _check_data(self, request, data, context):
         buf = StringIO(request.body)
         try:
@@ -94,10 +99,9 @@ class TestLambdaFunction(unittest.TestCase):
 
         for i in xrange(BODY_SIZE):
             json_body_log = json.loads(body_logs_list[i])
-            logger.info("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
+            logger.debug("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
                         .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
 
-            print(json_body_log)
             self.assertEqual(json_body_log['function_version'], context.function_version)
             self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
@@ -107,7 +111,6 @@ class TestLambdaFunction(unittest.TestCase):
 
     def _check_json_data(self, request, data, context):
         body_logs_list = request.body.splitlines()
-
         gen_log_events = data['logEvents']
 
         for i in xrange(BODY_SIZE):
@@ -127,37 +130,25 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_bad_request(self):
         logger.info("TEST: test_bad_request")
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
                                 httpretty.Response(body="first", status=400),
                                 httpretty.Response(body="second", status=401),
                             ])
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         with self.assertRaises(BadLogsException):
             worker.lambda_handler(event['enc'], Context)
-        logger.info("Catched the correct exception. Status code = 400")
+        logger.info("Caught the correct exception. Status code = 400")
 
         with self.assertRaises(UnauthorizedAccessException):
             worker.lambda_handler(event['enc'], Context)
-        logger.info("Catched the correct exception. Status code = 401")
+        logger.info("Caught the correct exception. Status code = 401")
 
     @httpretty.activate
     def test_ok_request(self):
         logger.info("TEST: test_ok_request")
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
@@ -170,15 +161,9 @@ class TestLambdaFunction(unittest.TestCase):
     def test_ok_gzip_request(self):
         logger.info("TEST: test_ok_gzip_request")
         os.environ['COMPRESS'] = 'true'
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
@@ -191,15 +176,9 @@ class TestLambdaFunction(unittest.TestCase):
     def test_gzip_typo_request(self):
         logger.info("TEST: test_ok_gzip_request")
         os.environ['COMPRESS'] = 'fakecompress'
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
@@ -219,12 +198,6 @@ class TestLambdaFunction(unittest.TestCase):
         event = self._generate_aws_logs_event(self._json_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
@@ -236,18 +209,12 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_retry_request(self):
         logger.info("TEST: test_retry_request")
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
                                 httpretty.Response(body="1st Fail", status=500),
                                 httpretty.Response(body="2nd Fail", status=500),
                                 httpretty.Response(body="3rd Success", status=200)
                             ])
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
@@ -259,13 +226,8 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_retry_limit(self):
         logger.info("TEST: test_retry_request")
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
 
         with self.assertRaises(MaxRetriesException):
             worker.lambda_handler(event['enc'], Context)
@@ -273,13 +235,8 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_bad_url(self):
         logger.info("TEST: test_retry_request")
-        event = self._generate_aws_logs_event(_random_string_builder)
+        event = self._generate_aws_logs_event(self._random_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=404)
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
 
         with self.assertRaises(UnknownURL):
             worker.lambda_handler(event['enc'], Context)
@@ -307,11 +264,6 @@ class TestLambdaFunction(unittest.TestCase):
         event['awslogs']['data'] = enc_data
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
 
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         with self.assertRaises(TypeError):
             worker.lambda_handler(event, Context)
         logger.info("Catched the correct exception, wrong format message")
@@ -320,15 +272,9 @@ class TestLambdaFunction(unittest.TestCase):
     def test_large_body(self):
         logger.info("TEST: test_large_body")
         body_size = 2000
-        event = self._generate_aws_logs_event(_random_string_builder, body_size)
+        event = self._generate_aws_logs_event(self._random_string_builder, body_size)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
-
-        class Context(object):
-            function_version = 1
-            invoked_function_arn = 1
-            memory_limit_in_mb = 128
-
         try:
             worker.lambda_handler(event['enc'], Context)
         except Exception:
