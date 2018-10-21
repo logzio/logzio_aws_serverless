@@ -9,7 +9,7 @@ This is an AWS Lambda function that consume kinesis stream and sends logs to Log
 3. Choose **Author from scratch**, and enter the following information:
     - **Name:** Short name for your new Lambda function. We suggest adding the log type to the name.
     - **Runtime:** Choose **Python 2.7**
-    - **Role:** Click **Create new role from template(s)**. Under **Existing role**, select **Basic Edge Lambda permissions**
+    - **Role:** Click **Create new role from template(s)**. Under **Existing role**, select **Basic Edge Lambda ** and **AWSLambdaKinesisExecutionRole** permissions**
 4. Click **Create Function**, in the bottom right corner of the page. You'll need this in [_Step 2 - Uploading and configuring..._](#step-2---uploading-and-configuring-the-logz.io-lambda-shipper), so keep this page open.
 
 ## Step 2 - Uploading and configuring the Logz.io Lambda shipper
