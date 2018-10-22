@@ -128,7 +128,7 @@ class LogzioShipper(object):
 
     def add(self, log):
         # type: (dict) -> None
-        json_log = json.dumps(log)
+        json_log = json.dumps(log).encode('utf-8')
         self._logs.write(json_log)
         # To prevent flush() after every log added
         if self._logs.decompress_size() > self.MAX_BULK_SIZE_IN_BYTES:
