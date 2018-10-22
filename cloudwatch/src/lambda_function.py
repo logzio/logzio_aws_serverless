@@ -32,7 +32,6 @@ def _extract_lambda_log_message(log, log_group):
     # "REPORT RequestId: 5e665f81-641f-11e6-ab0f-b1affae60d28\tDuration: 1095.52 ms\tBilled Duration: 1100 ms \tMemory Size
     if '/aws/lambda/' in log_group:
         str_message = str(log['message'])
-        print('in log_group: {}'.format(str_message))
         if str_message.startswith('START') \
                 or str_message.startswith('END') \
                 or str_message.startswith('REPORT'):
@@ -46,7 +45,7 @@ def _extract_lambda_log_message(log, log_group):
         except ValueError:
             pass
 
-        message_parts = str_message[end_level+1:].split('\t')
+        message_parts = str_message[end_level+2:].split('\t')
         if len(message_parts) == 3:
             log['@timestamp'] = message_parts[0]
             log['requestID'] = message_parts[1]
