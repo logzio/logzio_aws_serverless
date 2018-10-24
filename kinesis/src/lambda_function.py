@@ -27,6 +27,20 @@ def _parse_json(log, record_data):
     log.update(json.loads(record_data))
 
 
+def _get_type(data):
+    # type: (str) -> str
+    try:
+        return os.environ['TYPE']
+    except KeyError:
+        pass
+
+    try:
+        json_data = json.loads(data)
+        return json_data["source"].split('.')[1]
+    except (KeyError, ValueError):
+        return "kinesis_lambda"
+
+
 def _add_record_kinesis_fields(log, record_kinesis_field):
     # type: (dict, dict) -> None
     for key, value in record_kinesis_field.items():
@@ -39,6 +53,7 @@ def _add_record_kinesis_fields(log, record_kinesis_field):
             except (KeyError, ValueError):
                 # Put data as a string
                 log["message"] = record_data
+            log["type"] = _get_type(record_data)
         elif key == "approximateArrivalTimestamp":
             try:
                 log["@timestamp"] = dt.datetime.utcfromtimestamp(value).isoformat() + 'Z'
@@ -52,11 +67,7 @@ def _add_record_kinesis_fields(log, record_kinesis_field):
 
 def _parse_kinesis_record(record):
     # type: (dict, str) -> dict
-    try:
-        log = {"type": os.environ['TYPE']}
-    except KeyError:
-        log = {"type": "kinesis_lambda"}
-
+    log = {}
     for record_key, record_value in record.items():
         if record_key == "kinesis":
             _add_record_kinesis_fields(log, record_value)
