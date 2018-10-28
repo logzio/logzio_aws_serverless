@@ -8,6 +8,7 @@ Parameters:
     Description: "Logz.io listener URL.
     If you are in the EU region insert 'https://listener-eu.logz.io:8071'.
     Otherwise, use 'https://listener.logz.io:8071'"
+    Default: "https://listener.logz.io:8071"
 
   LogzioTOKEN:
     Type: "String"
@@ -18,23 +19,27 @@ Parameters:
     Description: "The log type you'll use with this Lambda.
     Please note that you should create a new Lambda for each log type you use.
     This can be a built-in log type, or your custom log type"
+    Default: "logzio_cloudwatch_logs"
 
   LogzioFORMAT:
     Type: "String"
     Description: "json or text.
     If json, the lambda function will attempt to parse the message field as JSON
     and populate the event data with the parsed fields."
+    Default: "text"
 
   LogzioCOMPRESS:
     Type: "String"
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
+    Default: "false"
 
 Outputs:
     LogzioCloudwatchLogsLambda:
       Description: "Logz.io CW logs lambda ARN"
       Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
 
-LogzioCloudwatchLogsLambda:
+Resources:
+  LogzioCloudwatchLogsLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
       Runtime: python2.7
