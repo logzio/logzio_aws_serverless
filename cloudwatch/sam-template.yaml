@@ -1,0 +1,52 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: "This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP."
+Parameters:
+  LogzioURL:
+    Type: "String"
+    Description: "Logz.io listener URL.
+    If you are in the EU region insert 'https://listener-eu.logz.io:8071'.
+    Otherwise, use 'https://listener.logz.io:8071'"
+
+  LogzioTOKEN:
+    Type: "String"
+    Description: "Logz.io account token."
+
+  LogzioTYPE:
+    Type: "String"
+    Description: "The log type you'll use with this Lambda.
+    Please note that you should create a new Lambda for each log type you use.
+    This can be a built-in log type, or your custom log type"
+
+  LogzioFORMAT:
+    Type: "String"
+    Description: "json or text.
+    If json, the lambda function will attempt to parse the message field as JSON
+    and populate the event data with the parsed fields."
+
+  LogzioCOMPRESS:
+    Type: "String"
+    Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
+
+Outputs:
+    LogzioCloudwatchLogsLambda:
+      Description: "Logz.io CW logs lambda ARN"
+      Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
+
+LogzioCloudwatchLogsLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Runtime: python2.7
+      Handler: lambda_function.lambda_handler
+      CodeUri: ./dist/logzio-cloudwatch.zip
+      FunctionName: blablablalogzio-cloudwatch-log-shipper
+      MemorySize: 512
+      Timeout: 60
+      Environment:
+        Variables:
+          URL: !Ref LogzioURL
+          TOKEN: !Ref LogzioTOKEN
+          TYPE: !Ref LogzioTYPE
+          FORMAT: !Ref LogzioFORMAT
+          COMPRESS: !Ref LogzioCOMPRESS
