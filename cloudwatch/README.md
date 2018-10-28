@@ -38,3 +38,36 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 2. In the **Configure triggers** section, choose the **Log group** from which the Logz.io Lambda collects the logs.
 3. Type a **Filter name**.
 4. Click **Add** to add the trigger, and then click **Save** at the top of the page to save all your configurations.
+
+##CloudFormation
+
+**Prerequisites**
+
+- AWS CLI.
+- S3 bucket for the logzio Lambda deployment package.
+
+1. After you compressed the deployment package to a zip file ([_Step 2 - Uploading and configuring..._](#step-2---uploading-and-configuring-the-logz.io-lambda-shipper))
+ `cd` into `cloudwatch` folder and upload the package to your S3 bucket.
+ 
+     ```bash
+     aws cloudformation package 
+        --template sam-template.yaml
+        --output-template-file cloudformation-template.output.yaml 
+        --s3-bucket <your_s3_bucket>
+     ```
+ 
+2. The following is an example on how to deploy cloudformation, please replace the parameters with the ones you need:
+
+    ```bash
+    aws cloudformation deploy 
+    --template-file $(pwd)/cloudformation-template.output.yaml 
+    --stack-name logzio-cloudwatch-logs-lambda-stack 
+    --parameter-overrides 
+       LogzioFORMAT=='json' 
+       LogzioCOMPRESS='true' 
+       LogzioURL='https://listener.logz.io:8071' 
+       LogzioTOKEN='<your_token>'  
+       LogzioTYPE='logzio_cw_cf'
+    --capabilities "CAPABILITY_IAM"
+    ```
+ 
