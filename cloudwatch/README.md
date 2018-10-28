@@ -7,12 +7,12 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 
 You have two options to deploy:
 
-* [Option 1: Manual deployment of the Lambda function](#manual-deployment)
+* [Option 1: Manual deployment of the Lambda function](#Option-1:-Manually-deploy-the-Lambda-function)
 
-* [Option 2: Automatic deployment using CloudFormation](#auto-deployment)
+* [Option 2: Automatic deployment using CloudFormation](#Option-2:-Automatic-deployment-using-CloudFormation)
 
 
-### Option 1: Manually deploy the Lambda function {#manual-deployment}
+### Option 1: Manually deploy the Lambda function
 
 #### Create the Lambda Function
 
@@ -45,7 +45,7 @@ You have two options to deploy:
 6. In **Basic settings**, we recommend setting **Memory** to 512 MB, and setting **Timeout** to 1 min 0 sec. Keep an eye on your Lambda usage, and adjust these values accordingly.
 7. Leave the other settings as default.
 
-### Option 2: Automatic deployment using CloudFormation {#manual-deployment}
+### Option 2: Automatic deployment using CloudFormation
 
 **Prerequisites:** AWS CLI and an S3 bucket
 
