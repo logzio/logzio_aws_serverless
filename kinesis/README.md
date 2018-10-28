@@ -35,3 +35,33 @@ This is an AWS Lambda function that consume kinesis stream and sends logs to Log
 1. In the **Designer** section (at the top of the page), find the **Add triggers** list. Choose **Kinesis** from this list.
 2. In the **Configure triggers** section, choose the **Kinesis stream** from which the Logz.io Lambda collects the logs.
 3. Click **Add** to add the trigger, and then click **Save** at the top of the page to save all your configurations.
+
+##CloudFormation
+
+**Prerequisites**
+
+- AWS CLI.
+- S3 bucket for the logzio Lambda deployment package.
+- Kinesis stream.
+
+1. After you compressed the deployment package to a zip file ([_Step 2 - Uploading and configuring..._](#step-2---uploading-and-configuring-the-logz.io-lambda-shipper))
+ `cd` into `kinesis` folder and upload the package to your S3 bucket.
+ 
+     ```bash
+     aws cloudformation package 
+        --template sam-template.yaml
+        --output-template-file kinesis-template.output.yaml 
+        --s3-bucket <your_s3_bucket>
+     ```
+ 
+2. The following is an example on how to deploy cloudformation, please replace the parameters with the ones you need:
+
+    ```bash
+    aws cloudformation deploy 
+    --template-file $(pwd)/cloudformation-template.output.yaml 
+    --stack-name logzio-kinesis-logs-lambda-stack 
+    --parameter-overrides  
+       LogzioTOKEN='<your_logizo_token>'
+       KinesisStream='<your_kinesis_stream_name>'  
+    --capabilities "CAPABILITY_IAM"
+    ```
