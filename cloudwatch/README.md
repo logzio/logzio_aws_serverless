@@ -62,12 +62,8 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
     aws cloudformation deploy 
     --template-file $(pwd)/cloudformation-template.output.yaml 
     --stack-name logzio-cloudwatch-logs-lambda-stack 
-    --parameter-overrides 
-       LogzioFORMAT=='json' 
-       LogzioCOMPRESS='true' 
-       LogzioURL='https://listener.logz.io:8071' 
-       LogzioTOKEN='<your_token>'  
-       LogzioTYPE='logzio_cw_cf'
+    --parameter-overrides  
+       LogzioTOKEN='<your_logzio_token>'  
     --capabilities "CAPABILITY_IAM"
     ```
  
