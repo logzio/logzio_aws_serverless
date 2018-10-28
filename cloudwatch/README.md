@@ -7,7 +7,7 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 
 You have two options to deploy:
 
-* [Option 1: Manual deployment of the Lambda function](#Option-1-Manually-deploy-the-Lambda-function)
+* [Option 1: Manually deploy the Lambda function](#Option-1-Manually-deploy-the-Lambda-function)
 
 * [Option 2: Automatic deployment using CloudFormation](#Option-2-Automatic-deployment-using-CloudFormation)
 
@@ -22,7 +22,7 @@ You have two options to deploy:
     - **Name:** Short name for your new Lambda function. We suggest adding the log type to the name.
     - **Runtime:** Choose **Python 2.7**
     - **Role:** Click **Create new role from template(s)**. Under **Existing role**, select **Basic Edge Lambda permissions**
-4. Click **Create Function**, in the bottom right corner of the page. You'll need this in [_Step 2 - Uploading and configuring..._](#step-2---uploading-and-configuring-the-logz.io-lambda-shipper), so keep this page open.
+4. Click **Create Function**, in the bottom right corner of the page. You'll need this in the next step, so keep this page open.
 
 #### Upload and configure the Logz.io Lambda shipper
 
@@ -62,7 +62,7 @@ You have two options to deploy:
         --s3-bucket <your_s3_bucket>
      ```
  
-4. The following is an example on how to deploy cloudformation, please replace the parameters with the ones you need:
+4. The following is an example on how to deploy CloudFormation. Replace the parameters with the ones you need:
 
     ```bash
     aws cloudformation deploy 
@@ -73,6 +73,13 @@ You have two options to deploy:
     --capabilities "CAPABILITY_IAM"
     ```
  
+    | Key | Value | Default |
+    |---|---|---|
+    | `LogzioTOKEN` | **Required**. Your Logz.io account token, which can find in your [Settings page](https://app.logz.io/#/dashboard/settings/general) in Logz.io. | |
+    | `LogzioTYPE` | The log type you'll use with this Lambda. Please note that you should create a new Lambda for each log type you use. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or your custom log type | `logzio_cloudwatch_logs` |
+    | `LogzioFORMAT` | `json` or `text`. If `json`, the lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. | `text` |
+    | `LogzioURL` | Your Logz.io listener URL. If you are in the EU region, use `https://listener-eu.logz.io:8071`. Otherwise, use `https://listener.logz.io:8071`. If you don't know your region, check your login URL. _app-eu.logz.io_ is the EU data center. _app.logz.io_ is the US data center. | `https://listener.logz.io:8071` |
+    | `LogzioCOMPRESS` | If `true`, the Lambda will send compressed logs. If `false`, the Lambda will send uncompressed logs. | `false` |
 
 ## Step 2: Set up CloudWatch log event trigger
 
