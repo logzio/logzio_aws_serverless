@@ -40,7 +40,7 @@ LogzioCloudwatchLogsLambda:
       Runtime: python2.7
       Handler: lambda_function.lambda_handler
       CodeUri: ./dist/logzio-cloudwatch.zip
-      FunctionName: blablablalogzio-cloudwatch-log-shipper
+      FunctionName: logzio-cloudwatch-log-shipper
       MemorySize: 512
       Timeout: 60
       Environment:
