@@ -39,7 +39,7 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 3. Type a **Filter name**.
 4. Click **Add** to add the trigger, and then click **Save** at the top of the page to save all your configurations.
 
-##CloudFormation
+## CloudFormation
 
 **Prerequisites**
 

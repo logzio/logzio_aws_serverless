@@ -36,7 +36,7 @@ This is an AWS Lambda function that consume kinesis stream and sends logs to Log
 2. In the **Configure triggers** section, choose the **Kinesis stream** from which the Logz.io Lambda collects the logs.
 3. Click **Add** to add the trigger, and then click **Save** at the top of the page to save all your configurations.
 
-##CloudFormation
+## CloudFormation
 
 **Prerequisites**
 
