@@ -7,9 +7,9 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 
 You have two options to deploy:
 
-* [Option 1: Manual deployment of the Lambda function](#Option-1:-Manually-deploy-the-Lambda-function)
+* [Option 1: Manual deployment of the Lambda function](#Option-1-Manually-deploy-the-Lambda-function)
 
-* [Option 2: Automatic deployment using CloudFormation](#Option-2:-Automatic-deployment-using-CloudFormation)
+* [Option 2: Automatic deployment using CloudFormation](#Option-2-Automatic-deployment-using-CloudFormation)
 
 
 ### Option 1: Manually deploy the Lambda function
