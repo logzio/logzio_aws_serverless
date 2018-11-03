@@ -267,6 +267,25 @@ class TestLambdaFunction(unittest.TestCase):
         last_bulk_length = len(request.body.splitlines())
         assert last_bulk_length <= 2000, "Logs were not fragmented"
 
+    @httpretty.activate
+    def test_enrich_event(self):
+        os.environ['ENRICH'] = "environment=testing;foo=bar"
+        event = self._generate_aws_logs_event(self._json_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
+
+        request = httpretty.HTTPretty.last_request
+        body_logs_list = request.body.splitlines()
+
+        for i in xrange(BODY_SIZE):
+            json_body_log = json.loads(body_logs_list[i])
+            self.assertEqual(json_body_log['environment'], "testing")
+            self.assertEqual(json_body_log['foo'], "bar")
+
 
 if __name__ == '__main__':
     unittest.main()
