@@ -33,6 +33,10 @@ Parameters:
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
     Default: "false"
 
+  LogzioENRICH:
+    Type: "String"
+    Description: "Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty."
+
 Outputs:
     LogzioCloudwatchLogsLambda:
       Description: "Logz.io CW logs lambda ARN"
@@ -55,3 +59,4 @@ Resources:
           TYPE: !Ref LogzioTYPE
           FORMAT: !Ref LogzioFORMAT
           COMPRESS: !Ref LogzioCOMPRESS
+          ENRICH: !Ref LogzioENRICH
