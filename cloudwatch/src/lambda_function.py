@@ -76,6 +76,16 @@ def _parse_cloudwatch_log(log, aws_logs_data, log_type):
     except (KeyError, ValueError):
         pass
 
+    # If ENRICH has value, add the properties
+    try:
+        if os.environ['ENRICH']:
+            properties_to_enrich = os.environ['ENRICH'].split(";")
+            for property_to_enrich in properties_to_enrich:
+                property_key_value = property_to_enrich.split("=")
+                log[property_key_value[0]] = property_key_value[1]
+    except (KeyError, ValueError):
+        pass
+
 
 def _enrich_logs_data(aws_logs_data, context):
     # type: (dict, 'LambdaContext') -> None
