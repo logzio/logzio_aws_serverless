@@ -41,6 +41,7 @@ You have two options to deploy:
     | `FORMAT` | `json` or `text`. If `json`, the lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. | `text` |
     | `URL` | **Required**. Your Logz.io listener URL. If you are in the EU region, use `https://listener-eu.logz.io:8071`. Otherwise, use `https://listener.logz.io:8071`. If you don't know your region, check your login URL. _app-eu.logz.io_ is the EU data center. _app.logz.io_ is the US data center. |
     | `COMPRESS` | If `true`, the Lambda will send compressed logs. If `false`, the Lambda will send uncompressed logs. | `false` |
+    | `ENRICH` | Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty. | |
 
 6. In **Basic settings**, we recommend setting **Memory** to 512 MB, and setting **Timeout** to 1 min 0 sec. Keep an eye on your Lambda usage, and adjust these values accordingly.
 7. Leave the other settings as default.
@@ -80,6 +81,7 @@ You have two options to deploy:
     | `LogzioFORMAT` | `json` or `text`. If `json`, the lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. | `text` |
     | `LogzioURL` | Your Logz.io listener URL. If you are in the EU region, use `https://listener-eu.logz.io:8071`. Otherwise, use `https://listener.logz.io:8071`. If you don't know your region, check your login URL. _app-eu.logz.io_ is the EU data center. _app.logz.io_ is the US data center. | `https://listener.logz.io:8071` |
     | `LogzioCOMPRESS` | If `true`, the Lambda will send compressed logs. If `false`, the Lambda will send uncompressed logs. | `false` |
+    | `LogzioENRICH` | Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty. | |
 
 ## Step 2: Set up CloudWatch log event trigger
 
