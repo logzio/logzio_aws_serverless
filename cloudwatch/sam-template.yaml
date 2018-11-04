@@ -36,6 +36,7 @@ Parameters:
   LogzioENRICH:
     Type: "String"
     Description: "Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty."
+    Default: ""
 
 Outputs:
     LogzioCloudwatchLogsLambda:
