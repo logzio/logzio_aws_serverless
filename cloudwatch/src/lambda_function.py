@@ -67,6 +67,10 @@ def _parse_cloudwatch_log(log, aws_logs_data, log_type):
     log['invoked_function_arn'] = aws_logs_data['invoked_function_arn']
     log['type'] = log_type
 
+    if 'data_to_enrich' in aws_logs_data:
+        for key, value in aws_logs_data['data_to_enrich'].items():
+            log[key] = value
+
     # If FORMAT is json treat message as a json
     try:
         if os.environ['FORMAT'].lower() == 'json':
@@ -76,22 +80,21 @@ def _parse_cloudwatch_log(log, aws_logs_data, log_type):
     except (KeyError, ValueError):
         pass
 
-    # If ENRICH has value, add the properties
-    try:
-        if os.environ['ENRICH']:
-            properties_to_enrich = os.environ['ENRICH'].split(";")
-            for property_to_enrich in properties_to_enrich:
-                property_key_value = property_to_enrich.split("=")
-                log[property_key_value[0]] = property_key_value[1]
-    except (KeyError, ValueError):
-        pass
-
 
 def _enrich_logs_data(aws_logs_data, context):
     # type: (dict, 'LambdaContext') -> None
     try:
         aws_logs_data['function_version'] = context.function_version
         aws_logs_data['invoked_function_arn'] = context.invoked_function_arn
+
+        # If ENRICH has value, add the properties
+        if os.environ['ENRICH']:
+            data_to_enrich = dict()
+            properties_to_enrich = os.environ['ENRICH'].split(";")
+            for property_to_enrich in properties_to_enrich:
+                property_key_value = property_to_enrich.split("=")
+                data_to_enrich[property_key_value[0]] = property_key_value[1]
+            aws_logs_data['data_to_enrich'] = data_to_enrich
     except KeyError:
         pass
 
