@@ -52,20 +52,14 @@ def _extract_lambda_log_message(log, log_group):
             log['message'] = message_parts[2]
 
 
-def _parse_cloudwatch_log(log, aws_logs_data, log_type):
+def _parse_cloudwatch_log(log, additional_data):
     # type: (dict, dict) -> None
     if '@timestamp' not in log:
         log['@timestamp'] = str(log['timestamp'])
         del log['timestamp']
 
-    _extract_lambda_log_message(log, aws_logs_data['logGroup'])
-    log['logStream'] = aws_logs_data['logStream']
-    log['messageType'] = aws_logs_data['messageType']
-    log['owner'] = aws_logs_data['owner']
-    log['logGroup'] = aws_logs_data['logGroup']
-    log['function_version'] = aws_logs_data['function_version']
-    log['invoked_function_arn'] = aws_logs_data['invoked_function_arn']
-    log['type'] = log_type
+    _extract_lambda_log_message(log, additional_data['logGroup'])
+    log.update(additional_data)
 
     # If FORMAT is json treat message as a json
     try:
@@ -77,26 +71,44 @@ def _parse_cloudwatch_log(log, aws_logs_data, log_type):
         pass
 
 
-def _enrich_logs_data(aws_logs_data, context):
-    # type: (dict, 'LambdaContext') -> None
+def _get_additional_logs_data(aws_logs_data, context):
+    # type: (dict, 'LambdaContext') -> dict
+    additional_fields = ['logGroup', 'logStream', 'messageType', 'owner']
+    additional_data = dict((key, aws_logs_data[key]) for key in additional_fields)
     try:
-        aws_logs_data['function_version'] = context.function_version
-        aws_logs_data['invoked_function_arn'] = context.invoked_function_arn
+        additional_data['function_version'] = context.function_version
+        additional_data['invoked_function_arn'] = context.invoked_function_arn
     except KeyError:
         pass
+
+    try:
+        # If ENRICH has value, add the properties
+        if os.environ['ENRICH']:
+            properties_to_enrich = os.environ['ENRICH'].split(";")
+            for property_to_enrich in properties_to_enrich:
+                property_key_value = property_to_enrich.split("=")
+                additional_data[property_key_value[0]] = property_key_value[1]
+    except KeyError:
+        pass
+
+    try:
+        additional_data['type'] = os.environ['TYPE']
+    except KeyError:
+        additional_data['type'] = 'logzio_cloudwatch_lambda'
+
+    return additional_data
 
 
 def lambda_handler(event, context):
     # type: (dict, 'LambdaContext') -> None
     try:
         logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
-        log_type = (os.environ['TYPE'])
     except KeyError as e:
         logger.error("Missing one of the environment variable: {}".format(e))
         raise
 
     aws_logs_data = _extract_aws_logs_data(event)
-    _enrich_logs_data(aws_logs_data, context)
+    additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper(logzio_url)
 
     logger.info("About to send {} logs".format(len(aws_logs_data['logEvents'])))
@@ -104,7 +116,7 @@ def lambda_handler(event, context):
         if not isinstance(log, dict):
             raise TypeError("Expected log inside logEvents to be a dict but found another type")
 
-        _parse_cloudwatch_log(log, aws_logs_data, log_type)
+        _parse_cloudwatch_log(log, additional_data)
         shipper.add(log)
 
     shipper.flush()
