@@ -7,7 +7,7 @@ from shipper.shipper import LogzioShipper
 from StringIO import StringIO
 
 KEY_INDEX = 0
-VALUE_INDEX = 0
+VALUE_INDEX = 1
 
 # set logger
 logger = logging.getLogger()
