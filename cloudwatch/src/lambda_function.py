@@ -47,13 +47,12 @@ def _extract_lambda_log_message(log, log_group):
             start_level = str_message.index('[')
             end_level = str_message.index(']')
             log_level = str_message[start_level+1:end_level]
+            if log_level.lower() in LOG_LEVELS:
+                log['log_level'] = log_level
+            start_split = end_level + 2
         except ValueError:
-            return
-
-        start_split = 0
-        if log_level.lower() in LOG_LEVELS:
-            log['log_level'] = log_level
-            start_split = end_level+2
+            # Let's try without log level
+            start_split = 0
 
         message_parts = str_message[start_split:].split('\t')
         if len(message_parts) == 3:
