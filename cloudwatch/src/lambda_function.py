@@ -9,7 +9,7 @@ from StringIO import StringIO
 KEY_INDEX = 0
 VALUE_INDEX = 1
 LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
-          'warning', 'error', 'err', 'critical', 'crit', 'fatel',
+          'warning', 'error', 'err', 'critical', 'crit', 'fatal',
           'severe', 'emerg', 'emergency']
 
 # set logger
