@@ -8,6 +8,9 @@ from StringIO import StringIO
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
+LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
+          'warning', 'error', 'err', 'critical', 'crit', 'fatal',
+          'severe', 'emerg', 'emergency']
 
 # set logger
 logger = logging.getLogger()
@@ -40,15 +43,18 @@ def _extract_lambda_log_message(log, log_group):
                 or str_message.startswith('REPORT'):
             return
 
-        end_level = 0
         try:
             start_level = str_message.index('[')
             end_level = str_message.index(']')
-            log['level'] = str_message[start_level+1:end_level]
+            log_level = str_message[start_level+1:end_level]
+            if log_level.lower() in LOG_LEVELS:
+                log['log_level'] = log_level
+            start_split = end_level + 2
         except ValueError:
-            pass
+            # Let's try without log level
+            start_split = 0
 
-        message_parts = str_message[end_level+2:].split('\t')
+        message_parts = str_message[start_split:].split('\t')
         if len(message_parts) == 3:
             log['@timestamp'] = message_parts[0]
             log['requestID'] = message_parts[1]
