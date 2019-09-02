@@ -133,8 +133,8 @@ class TestLambdaFunction(unittest.TestCase):
                                 httpretty.Response(body="first", status=400),
                                 httpretty.Response(body="second", status=401),
                             ])
-        with self.assertRaises(BadLogsException):
-            worker.lambda_handler(event['enc'], Context)
+
+        worker.lambda_handler(event['enc'], Context)
 
         with self.assertRaises(UnauthorizedAccessException):
             worker.lambda_handler(event['enc'], Context)

@@ -127,8 +127,7 @@ class TestLambdaFunction(unittest.TestCase):
                                 httpretty.Response(body="second", status=401),
                             ])
 
-        with self.assertRaises(BadLogsException):
-            worker.lambda_handler(event, None)
+        worker.lambda_handler(event, None)
 
         with self.assertRaises(UnauthorizedAccessException):
             worker.lambda_handler(event, None)
