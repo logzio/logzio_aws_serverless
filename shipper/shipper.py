@@ -198,7 +198,7 @@ class LogzioShipper(object):
         except BadLogsException as e:
             logger.error("Got 400 code from Logz.io. This means that some of your logs are too big, "
                          "or badly formatted. response: {0}".format(e.message))
-            raise BadLogsException()
+            logger.warning("Dropping logs that cause the bad response...")
         except UnauthorizedAccessException:
             logger.error("You are not authorized with Logz.io! Token OK? dropping logs...")
             raise UnauthorizedAccessException()
