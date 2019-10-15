@@ -8,10 +8,10 @@ import random
 import cloudwatch.src.lambda_function as worker
 import string
 import unittest
-
 from logging.config import fileConfig
 from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
-from StringIO import StringIO
+from io import BytesIO
+import urllib.request
 
 # CONST
 BODY_SIZE = 10
@@ -45,7 +45,7 @@ class TestLambdaFunction(unittest.TestCase):
     @staticmethod
     # Build random string with STRING_LEN chars
     def _json_string_builder():
-        s = string.lowercase + string.digits
+        s = string.ascii_lowercase + string.digits
         return json.dumps({
                 'field1': 'abcd',
                 'field2': 'efgh',
@@ -54,7 +54,7 @@ class TestLambdaFunction(unittest.TestCase):
 
     @staticmethod
     def _random_string_builder():
-        s = string.lowercase + string.digits
+        s = string.ascii_lowercase + string.digits
         return ''.join(random.sample(s, STRING_LEN))
 
     @staticmethod
@@ -77,30 +77,31 @@ class TestLambdaFunction(unittest.TestCase):
         event = {'awslogs': {}}
 
         data = self._data_body_builder(message_builder, body_size)
-        zip_text_file = StringIO()
+        zip_text_file = BytesIO()
+        json_data = json.dumps(data).encode('utf-8')
         zipper = gzip.GzipFile(mode='wb', fileobj=zip_text_file)
-        zipper.write(json.dumps(data))
+        zipper.write(json_data)
         zipper.close()
         enc_data = base64.b64encode(zip_text_file.getvalue())
 
         event['awslogs']['data'] = enc_data
         return {'dec': data, 'enc': event}
 
-    # Verify the data
     def _check_data(self, request, data, context):
-        buf = StringIO(request.body)
+        buf = BytesIO(request.body)
         try:
             body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
         except KeyError:
             body = buf
-
         body_logs_list = body.readlines()
+        if request.headers['Content-Encoding'] == 'gzip':
+            body_logs_list = body_logs_list[0].decode('utf-8')
+            body_logs_list = [e + "}" for e in body_logs_list.split("}") if e]
         gen_log_events = data['logEvents']
-
-        for i in xrange(BODY_SIZE):
+        for i in range(BODY_SIZE):
             json_body_log = json.loads(body_logs_list[i])
             logger.debug("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
-                        .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
+                         .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
             self.assertEqual(json_body_log['function_version'], context.function_version)
             self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
@@ -111,12 +112,10 @@ class TestLambdaFunction(unittest.TestCase):
     def _check_json_data(self, request, data, context):
         body_logs_list = request.body.splitlines()
         gen_log_events = data['logEvents']
-
-        for i in xrange(BODY_SIZE):
+        for i in range(BODY_SIZE):
             json_body_log = json.loads(body_logs_list[i])
             logger.debug("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}".
                          format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
-
             self.assertEqual(json_body_log['function_version'], context.function_version)
             self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
             self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
@@ -125,32 +124,6 @@ class TestLambdaFunction(unittest.TestCase):
             json_message = json.loads(gen_log_events[i]['message'])
             for key, value in json_message.items():
                 self.assertEqual(json_body_log[key], value)
-
-    @httpretty.activate
-    def test_bad_request(self):
-        event = self._generate_aws_logs_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
-                                httpretty.Response(body="first", status=400),
-                                httpretty.Response(body="second", status=401),
-                            ])
-
-        worker.lambda_handler(event['enc'], Context)
-
-        with self.assertRaises(UnauthorizedAccessException):
-            worker.lambda_handler(event['enc'], Context)
-
-    @httpretty.activate
-    def test_ok_request(self):
-        event = self._generate_aws_logs_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
-                               content_type="application/json")
-        try:
-            worker.lambda_handler(event['enc'], Context)
-        except Exception:
-            self.fail("Failed on handling a legit event. Expected status_code = 200")
-
-        request = httpretty.HTTPretty.last_request
-        self._check_data(request, event['dec'], Context)
 
     @httpretty.activate
     def test_ok_gzip_request(self):
@@ -176,13 +149,65 @@ class TestLambdaFunction(unittest.TestCase):
             worker.lambda_handler(event['enc'], Context)
         except Exception:
             assert "Failed on handling a legit event. Expected status_code = 200"
+        request = httpretty.HTTPretty.last_request
+        # if request.headers["Content-Encoding"] != None:
+        #     self.fail("Failed to send uncompressed logs with typo in compress env filed")
+        try:
+            gzip_header = dict(request.headers)["Content-Encoding"]
+            self.fail("Failed to send uncompressed logs with typo in compress env filed")
+        except KeyError as e:
+            pass
+
+    @httpretty.activate
+    def test_wrong_format_event(self):
+        event = {'awslogs': {}}
+        data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
+
+        # Adding wrong format log
+        log = "{'timestamp' : '10', 'message' : 'wrong_format', 'id' : '10'}"
+        data_body['logEvents'].append(log)
+        data_body['owner'] = 'Test'
+        data_body['subscriptionFilters'] = ['TestFilters']
+        data_body['logGroup'] = 'TestlogGroup'
+
+        zip_text_file = BytesIO()
+        zipper = gzip.GzipFile(mode='wb', fileobj=zip_text_file)
+        zipper.write(json.dumps(data_body).encode('utf-8'))
+        zipper.close()
+        enc_data = base64.b64encode(zip_text_file.getvalue())
+
+        event['awslogs']['data'] = enc_data
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
+
+        with self.assertRaises(TypeError):
+            worker.lambda_handler(event, Context)
+
+
+    @httpretty.activate
+    def test_ok_request(self):
+        event = self._generate_aws_logs_event(self._random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
-        try:
-            gzip_header = request.headers["Content-Encoding"]
-            self.fail("Failed to send uncompressed logs with typo in compress env filed")
-        except KeyError:
-            pass
+        self._check_data(request, event['dec'], Context)
+
+    @httpretty.activate
+    def test_bad_request(self):
+        event = self._generate_aws_logs_event(self._random_string_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
+                                httpretty.Response(body="first", status=400),
+                                httpretty.Response(body="second", status=401),
+                            ])
+
+        worker.lambda_handler(event['enc'], Context)
+
+        with self.assertRaises(UnauthorizedAccessException):
+            worker.lambda_handler(event['enc'], Context)
 
     @httpretty.activate
     def test_json_type_request(self):
@@ -229,30 +254,6 @@ class TestLambdaFunction(unittest.TestCase):
             worker.lambda_handler(event['enc'], Context)
 
     @httpretty.activate
-    def test_wrong_format_event(self):
-        event = {'awslogs': {}}
-        data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
-
-        # Adding wrong format log
-        log = "{'timestamp' : '10', 'message' : 'wrong_format', 'id' : '10'}"
-        data_body['logEvents'].append(log)
-        data_body['owner'] = 'Test'
-        data_body['subscriptionFilters'] = ['TestFilters']
-        data_body['logGroup'] = 'TestlogGroup'
-
-        zip_text_file = StringIO()
-        zipper = gzip.GzipFile(mode='wb', fileobj=zip_text_file)
-        zipper.write(json.dumps(data_body))
-        zipper.close()
-        enc_data = base64.b64encode(zip_text_file.getvalue())
-
-        event['awslogs']['data'] = enc_data
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
-
-        with self.assertRaises(TypeError):
-            worker.lambda_handler(event, Context)
-
-    @httpretty.activate
     def test_large_body(self):
         body_size = 2000
         event = self._generate_aws_logs_event(self._random_string_builder, body_size)
@@ -281,7 +282,7 @@ class TestLambdaFunction(unittest.TestCase):
         request = httpretty.HTTPretty.last_request
         body_logs_list = request.body.splitlines()
 
-        for i in xrange(BODY_SIZE):
+        for i in range(BODY_SIZE):
             json_body_log = json.loads(body_logs_list[i])
             self.assertEqual(json_body_log['environment'], "testing")
             self.assertEqual(json_body_log['foo'], "bar")
@@ -300,7 +301,7 @@ class TestLambdaFunction(unittest.TestCase):
         request = httpretty.HTTPretty.last_request
         body_logs_list = request.body.splitlines()
 
-        for i in xrange(BODY_SIZE):
+        for i in range(BODY_SIZE):
             json_body_log = json.loads(body_logs_list[i])
             self.assertFalse(hasattr(json_body_log, "environment"))
 

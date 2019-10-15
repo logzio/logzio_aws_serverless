@@ -2,9 +2,9 @@ import gzip
 import json
 import logging
 import os
-
 from shipper.shipper import LogzioShipper
-from StringIO import StringIO
+import base64
+from io import BytesIO
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
@@ -16,12 +16,13 @@ LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-
 def _extract_aws_logs_data(event):
     # type: (dict) -> dict
+    event_str = event['awslogs']['data']
     try:
-        logs_data_decoded = event['awslogs']['data'].decode('base64')
-        logs_data_unzipped = gzip.GzipFile(fileobj=StringIO(logs_data_decoded)).read()
+        logs_data_decoded = base64.b64decode(event_str)
+        logs_data_unzipped = gzip.GzipFile(fileobj=BytesIO(logs_data_decoded))
+        logs_data_unzipped = logs_data_unzipped.read()
         logs_data_dict = json.loads(logs_data_unzipped)
         return logs_data_dict
     except ValueError as e:
@@ -110,7 +111,7 @@ def _get_additional_logs_data(aws_logs_data, context):
 
 
 def lambda_handler(event, context):
-    # type: (dict, 'LambdaContext') -> None
+    # type (dict, 'LambdaContext') -> None
     try:
         logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
     except KeyError as e:

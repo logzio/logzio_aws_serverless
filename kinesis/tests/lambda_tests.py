@@ -6,14 +6,15 @@ import json
 import logging
 import os
 import random
-
 import kinesis.src.lambda_function as worker
 import string
 import unittest
+import urllib.request
 
 from logging.config import fileConfig
 from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
-from StringIO import StringIO
+from io import BytesIO
+
 
 # CONST
 RECORD_SIZE = 10
@@ -59,7 +60,7 @@ class TestLambdaFunction(unittest.TestCase):
     @staticmethod
     # Build random string with STRING_LEN chars
     def _json_string_builder():
-        s = string.lowercase + string.digits
+        s = string.ascii_lowercase + string.digits
         return json.dumps({
                 'field1': 'abcd',
                 'field2': 'efgh',
@@ -68,7 +69,7 @@ class TestLambdaFunction(unittest.TestCase):
 
     @staticmethod
     def _random_string_builder():
-        s = string.lowercase + string.digits
+        s = string.ascii_lowercase + string.digits
         return ''.join(random.sample(s, STRING_LEN))
 
     def _kinesis_record_builder(self, message_builder):
@@ -81,24 +82,29 @@ class TestLambdaFunction(unittest.TestCase):
             self._dec_data.append(dec_data)
 
         kinesis_data = copy.deepcopy(_kinesis_data)
-        kinesis_data['data'] = base64.b64encode(dec_data)
+        kinesis_data['data'] = base64.b64encode(dec_data.encode('utf-8'))
         record_body['kinesis'] = kinesis_data
         return record_body
 
     def _generate_kinesis_event(self, message_builder):
-        return {'Records': [self._kinesis_record_builder(message_builder) for _ in xrange(RECORD_SIZE)]}
+        return {'Records': [self._kinesis_record_builder(message_builder) for _ in range(RECORD_SIZE)]}
 
     def _validate_data(self, request):
-        buf = StringIO(request.body)
+        buf = BytesIO(request.body)
         try:
             body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
         except KeyError:
             body = buf
 
-        body_logs_list = body.readlines()
-        for i in xrange(RECORD_SIZE):
+        body_logs = body.readlines()
+        if (request.headers['Content-Encoding'] == 'gzip'):
+            body_logs = body_logs[0].decode('utf-8', errors="ignore")
+            body_logs_list = [e + "}" for e in body_logs.split("}") if e]
+        else:
+            body_logs_list = body_logs
+
+        for i in range(RECORD_SIZE):
             json_body_log = json.loads(body_logs_list[i])
-            # print(json_body_log)
             for key, value in json_body_log.items():
                 if key == '@timestamp':
                     pass
@@ -141,7 +147,6 @@ class TestLambdaFunction(unittest.TestCase):
             worker.lambda_handler(event, None)
         except Exception:
             self.fail("Failed on handling a legit event. Expected status_code = 200")
-
         request = httpretty.HTTPretty.last_request
         self._validate_data(request)
 
@@ -172,7 +177,7 @@ class TestLambdaFunction(unittest.TestCase):
 
         request = httpretty.HTTPretty.last_request
         try:
-            gzip_header = request.headers["Content-Encoding"]
+            gzip_header = dict(request.headers)["Content-Encoding"]
             self.fail("Failed to send uncompressed logs with typo in compress env filed")
         except KeyError:
             pass
@@ -191,6 +196,7 @@ class TestLambdaFunction(unittest.TestCase):
         request = httpretty.HTTPretty.last_request
         self._validate_data(request)
 
+#########
     @httpretty.activate
     def test_retry_request(self):
         event = self._generate_kinesis_event(self._random_string_builder)
@@ -223,6 +229,7 @@ class TestLambdaFunction(unittest.TestCase):
         with self.assertRaises(UnknownURL):
             worker.lambda_handler(event, None)
 
+
     @httpretty.activate
     def test_wrong_event(self):
         event = {'awslogs': {}}
@@ -235,9 +242,9 @@ class TestLambdaFunction(unittest.TestCase):
         data_body['subscriptionFilters'] = ['TestFilters']
         data_body['logGroup'] = 'TestlogGroup'
 
-        zip_text_file = StringIO()
+        zip_text_file = BytesIO()
         zipper = gzip.GzipFile(mode='wb', fileobj=zip_text_file)
-        zipper.write(json.dumps(data_body))
+        zipper.write(json.dumps(data_body).encode('utf-8'))
         zipper.close()
         enc_data = base64.b64encode(zip_text_file.getvalue())
 
