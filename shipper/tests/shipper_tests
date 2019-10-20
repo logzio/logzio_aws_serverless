@@ -1,0 +1,156 @@
+import base64
+import copy
+import gzip
+import httpretty
+import json
+import logging
+import os
+import random
+import string
+import unittest
+import urllib.request
+
+from logging.config import fileConfig
+# from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
+from shipper.shipper import LogzioShipper
+from io import BytesIO
+
+
+class TestLambdaFunction(unittest.TestCase):
+    def setUp(self):
+        # Set os.environ for tests
+        os.environ['URL'] = "https://listener.logz.io:8071"
+        os.environ['TOKEN'] = "12345678"
+        os.environ['TYPE'] = "test_log"
+        self._logzioUrl = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
+        self._dec_data = []
+
+    def generate_logs(self):
+        logs = [
+            {'k1': 'v1'},
+            {'k2': 'v2'},
+            {'k3': 'v3'},
+            {'k4': 'v4'}
+        ]
+        return logs
+
+    def ship_logs(self, logs):
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        shipper = LogzioShipper(self._logzioUrl)
+        for log in logs:
+            shipper.add(log)
+        shipper.flush()
+        return logs
+
+    def validate_data(self, request, logs):
+        buf = BytesIO(request.body)
+        try:
+            body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
+        except KeyError:
+            body = buf
+
+        body_logs = body.readlines()
+        if request.headers['Content-Encoding'] == 'gzip':
+            body_logs = body_logs[0].decode('utf-8')
+            body_logs_list = [e + "}" for e in body_logs.split("}") if e]
+        else:
+            body_logs_list = body_logs
+        i = 0
+        if len(body_logs_list) != len(logs):
+            self.fail("Failed on extracting Gzip file")
+        for log in logs:
+            log = json.dumps(log)
+            if body_logs_list[i] == log:
+                i = i + 1
+            else:
+                self.fail("Failed on extracting Gzip file")
+
+    @httpretty.activate
+    def test_ok_request(self):
+        os.environ['COMPRESS'] = 'true'
+        logs = self.generate_logs()
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            self.ship_logs(logs)
+        except Exception:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
+        request = httpretty.HTTPretty.last_request
+        self.validate_data(request, logs)
+
+    @httpretty.activate
+    def test_ok_gzip_request(self):
+        os.environ['COMPRESS'] = 'true'
+        logs = self.generate_logs()
+        self.ship_logs(logs)
+        request = httpretty.HTTPretty.last_request
+        self.validate_data(request, logs)
+
+    @httpretty.activate
+    def test_gzip_typo_request(self):
+        os.environ['COMPRESS'] = 'fakecompress'
+        logs = self.generate_logs()
+        self.ship_logs(logs)
+        request = httpretty.HTTPretty.last_request
+        try:
+            gzip_header = dict(request.headers)["Content-Encoding"]
+            self.fail("Failed to send uncompressed logs with typo in compress env filed")
+        except KeyError:
+            pass
+
+    @httpretty.activate
+    def test_json_type_request(self):
+        os.environ['FORMAT'] = "JSON"
+        logs = self.generate_logs()
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            self.ship_logs(logs)
+        except Exception:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
+        request = httpretty.HTTPretty.last_request
+        self.validate_data(request, logs)
+
+    # @httpretty.activate
+    # def test_retry_request(self):
+    #         event = self._generate_kinesis_event(self._random_string_builder)
+    #         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
+    #                                 httpretty.Response(body="1st Fail", status=500),
+    #                                 httpretty.Response(body="2nd Fail", status=500),
+    #                                 httpretty.Response(body="3rd Success", status=200)
+    #                             ])
+    #         try:
+    #             worker.lambda_handler(event, None)
+    #         except Exception:
+    #             self.fail("Should have succeeded on last try")
+    #
+    #         request = httpretty.HTTPretty.last_request
+    #         self._validate_data(request)
+    #
+    # @httpretty.activate
+    # def test_retry_limit(self):
+    #     event = self._generate_kinesis_event(self._random_string_builder)
+    #     httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
+    #
+    #     with self.assertRaises(MaxRetriesException):
+    #         worker.lambda_handler(event, None)
+    #
+    # @httpretty.activate
+    # def test_bad_url(self):
+    #     event = self._generate_kinesis_event(self._random_string_builder)
+    #     httpretty.register_uri(httpretty.POST, self._logzioUrl, status=404)
+    #
+    #     with self.assertRaises(UnknownURL):
+    #         worker.lambda_handler(event, None)
+
+    # def validate_gzip_data(self, request, logs):
+    #     buf = BytesIO(request.body)
+    #     body = gzip.GzipFile(mode='rb', fileobj=buf)
+    #     body_logs = body.readlines()
+    #     request_logs = body_logs[0].decode('utf-8')
+    #     request_logs_list = [e + "}" for e in request_logs.split("}") if e]
+
+
+if __name__ == '__main__':
+    unittest.main()
