@@ -126,63 +126,6 @@ class TestLambdaFunction(unittest.TestCase):
                     self.fail("Failed to find key in the original event")
 
     @httpretty.activate
-    def test_bad_request(self):
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
-                                httpretty.Response(body="first", status=400),
-                                httpretty.Response(body="second", status=401),
-                            ])
-
-        worker.lambda_handler(event, None)
-
-        with self.assertRaises(UnauthorizedAccessException):
-            worker.lambda_handler(event, None)
-
-    @httpretty.activate
-    def test_ok_request(self):
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
-                               content_type="application/json")
-        try:
-            worker.lambda_handler(event, None)
-        except Exception:
-            self.fail("Failed on handling a legit event. Expected status_code = 200")
-        request = httpretty.HTTPretty.last_request
-        self._validate_data(request)
-
-    @httpretty.activate
-    def test_ok_gzip_request(self):
-        os.environ['COMPRESS'] = 'true'
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
-                               content_type="application/json")
-        try:
-            worker.lambda_handler(event, None)
-        except Exception:
-            assert "Failed on handling a legit event. Expected status_code = 200"
-
-        request = httpretty.HTTPretty.last_request
-        self._validate_data(request)
-
-    @httpretty.activate
-    def test_gzip_typo_request(self):
-        os.environ['COMPRESS'] = 'fakecompress'
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
-                               content_type="application/json")
-        try:
-            worker.lambda_handler(event, None)
-        except Exception:
-            assert "Failed on handling a legit event. Expected status_code = 200"
-
-        request = httpretty.HTTPretty.last_request
-        try:
-            gzip_header = dict(request.headers)["Content-Encoding"]
-            self.fail("Failed to send uncompressed logs with typo in compress env filed")
-        except KeyError:
-            pass
-
-    @httpretty.activate
     def test_json_type_request(self):
         os.environ['FORMAT'] = "JSON"
         event = self._generate_kinesis_event(self._json_string_builder)
@@ -195,40 +138,6 @@ class TestLambdaFunction(unittest.TestCase):
 
         request = httpretty.HTTPretty.last_request
         self._validate_data(request)
-
-#########
-    @httpretty.activate
-    def test_retry_request(self):
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
-                                httpretty.Response(body="1st Fail", status=500),
-                                httpretty.Response(body="2nd Fail", status=500),
-                                httpretty.Response(body="3rd Success", status=200)
-                            ])
-        try:
-            worker.lambda_handler(event, None)
-        except Exception:
-            self.fail("Should have succeeded on last try")
-
-        request = httpretty.HTTPretty.last_request
-        self._validate_data(request)
-
-    @httpretty.activate
-    def test_retry_limit(self):
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
-
-        with self.assertRaises(MaxRetriesException):
-            worker.lambda_handler(event, None)
-
-    @httpretty.activate
-    def test_bad_url(self):
-        event = self._generate_kinesis_event(self._random_string_builder)
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=404)
-
-        with self.assertRaises(UnknownURL):
-            worker.lambda_handler(event, None)
-
 
     @httpretty.activate
     def test_wrong_event(self):
