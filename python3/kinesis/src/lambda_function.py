@@ -4,7 +4,7 @@ import logging
 import os
 import datetime as dt
 
-from shipper.shipper import LogzioShipper
+from python3.shipper.shipper import LogzioShipper
 
 # set logger
 logger = logging.getLogger(__name__)

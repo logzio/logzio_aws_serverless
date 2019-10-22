@@ -5,12 +5,12 @@ import json
 import logging
 import os
 import random
-import cloudwatch.src.lambda_function as worker
+from python2 import cloudwatch as worker
 import string
 import unittest
 
 from logging.config import fileConfig
-from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
+from python2.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
 from StringIO import StringIO
 
 # CONST
