@@ -5,8 +5,8 @@ import os
 import unittest
 import urllib.request
 
-from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
-from shipper.shipper import LogzioShipper
+from python3.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
+from python3.shipper.shipper import LogzioShipper
 from io import BytesIO
 
 
