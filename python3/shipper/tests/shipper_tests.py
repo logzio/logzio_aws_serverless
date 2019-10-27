@@ -42,29 +42,24 @@ class TestLambdaFunction(unittest.TestCase):
             return str_log[:-1]
         return str_log
 
-    @staticmethod
-    def _split_str_to_logs(str_logs):
-        return [e + "}" for e in str_logs.split("}") if e]
-
-    def validate_data(self, request, logs):
+    def read_body_logs(self, request):
         buf = BytesIO(request.body)
         try:
             body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
         except KeyError:
             body = buf
         body_logs = body.readlines()
-        body_logs_list = [self.delete_new_line(log.decode('utf-8')) for log in body_logs]
+        return [self.delete_new_line(log.decode('utf-8')) for log in body_logs]
+
+    def validate_data(self, request, logs):
+        body_logs_list = self.read_body_logs(request)
         i = 0
-        # Validate amount of logs
         if len(body_logs_list) != len(logs):
             self.fail("Failed on extracting Gzip file")
-        # Validate value of each log
         for log in logs:
             log = json.dumps(log)
-            if body_logs_list[i] == log:
-                i = i + 1
-            else:
-                self.fail("Failed on extracting Gzip file")
+            self.assertTrue(body_logs_list[i] == log)
+            i = i + 1
 
     @httpretty.activate
     def test_ok_request(self):
