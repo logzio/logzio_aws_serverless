@@ -89,10 +89,6 @@ def lambda_handler(event, context):
     shipper = LogzioShipper(logzio_url)
     for record in event['Records']:
         log = _parse_kinesis_record(record)
-        try:
-            log["message"] = log["message"].decode("utf-8")
-        except AttributeError:
-            pass
         shipper.add(log)
 
     shipper.flush()

@@ -57,7 +57,7 @@ Resources:
   LogzioCloudwatchLogsLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Runtime: python2.7
+      Runtime: python3.7
       Handler: lambda_function.lambda_handler
       CodeUri: ./dist/logzio-kinesis.zip
       FunctionName: logzio-kinesis-stream-shipper
