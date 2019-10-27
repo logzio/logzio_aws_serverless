@@ -18,7 +18,7 @@ def _extract_record_data(data):
     try:
         return base64.b64decode(data)
     except TypeError as e:
-        logger.error("Fail to decode record data: {}".format(e.message))
+        logger.error("Fail to decode record data: {}".format(str(e)))
         raise
 
 
