@@ -1,9 +1,9 @@
-#  AWS serverless Shipper - Lambda
+#  AWS Serverless Shipper - Lambda
 
-AWS Lambda function that ships AWS serverless apps logs to Logz.io
+This is an AWS Lambda function that ships logs from AWS serverless apps to Logz.io.
 
-Note: Currently we support Python 2 and Python 3.
-However, Python 2 is about to be deprecated.
-Therefor, for new users we recommend using the Python 3 version.
+**Note**:
+This project contains code for Python 2 and Python 3.
+We recommend using Python 3 because Python 2 has reached its end of life.
 
- ### Choose your version to start usage
+[Get started with Python 3](https://github.com/logzio/logzio_aws_serverless/tree/support-python3/python3)
