@@ -50,7 +50,7 @@ You have two options to deploy:
 **Prerequisites:** AWS CLI, an S3 bucket, and a Kinesis stream
 
 1. Clone the logzio_aws_serverless repo to your machine (https://github.com/logzio/logzio_aws_serverless.git).
-2. `cd` into `logzio_aws_serverless/kinesis/`. Zip 'lambda_function.py' and 'shipper.py' with one of these options:
+2. `cd` into `logzio_aws_serverless/python2ß/kinesis/`. Zip 'lambda_function.py' and 'shipper.py' with one of these options:
     - `make build` creates the zip at 'dist/logzio-kinesis-stream-shipper.zip'
     - `mkdir dist; cp -r ../shipper dist/ && cp src/lambda_function.py dist/ && cd dist/ && zip logzio-kinesis shipper/* lambda_function.py`
 3. Upload the package to your S3 bucket.

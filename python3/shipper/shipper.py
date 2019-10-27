@@ -46,9 +46,11 @@ class GzipLogRequest(object):
 
     # GZIP
     def write(self, log):
-        log = bytes(log, 'utf-8')
-        self._writer.write("\n" + log) if self._decompress_size else self._writer.write(log)
-        self._logs_counter += 1
+        # self._writer.write(bytes(log, 'utf-8')) if self._logs_counter else self._writer.write(bytes("\n" + log, 'utf-8'))
+         if self._logs_counter:
+             log = "\n" + log
+         self._writer.write(bytes(log, 'utf-8'))
+         self._logs_counter += 1
 
     def reset(self):
         self._decompress_size = 0

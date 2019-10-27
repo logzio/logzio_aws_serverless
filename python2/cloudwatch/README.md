@@ -50,7 +50,7 @@ You have two options to deploy:
 **Prerequisites:** AWS CLI and an S3 bucket
 
 1. Clone the logzio_aws_serverless repo to your machine (https://github.com/logzio/logzio_aws_serverless.git).
-2. `cd` into `logzio_aws_serverless/cloudwatch/`. Zip 'lambda_function.py' and 'shipper.py' using the following command(s):
+2. `cd` into `logzio_aws_serverless/python2/cloudwatch/`. Zip 'lambda_function.py' and 'shipper.py' using the following command(s):
     - `mkdir dist; cp -r ../shipper dist/ && cp src/lambda_function.py dist/ && cd dist/ && zip logzio-cloudwatch shipper/* lambda_function.py`
 3. Upload the package to your S3 bucket.
  

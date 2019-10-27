@@ -27,7 +27,7 @@ You have two options to deploy:
 #### Upload and configure the Logz.io Lambda shipper
 
 1. Clone the logzio_aws_serverless repo to your machine (https://github.com/logzio/logzio_aws_serverless.git).
-2. `cd` into `logzio_aws_serverless/cloudwatch/`. Zip 'lambda_function.py' and 'shipper.py' using the following command(s):
+2. `cd` into `logzio_aws_serverless/python3/cloudwatch/`. Zip 'lambda_function.py' and 'shipper.py' using the following command(s):
     - `mkdir dist; cp -r ../shipper dist/ && cp src/lambda_function.py dist/ && cd dist/ && zip logzio-cloudwatch shipper/* lambda_function.py`
 3. In the **Function code** section of Lambda, choose **Upload a .ZIP file** from the **Code entry type list**.
 4. Click **Upload**, and choose the zip you created on your machine.

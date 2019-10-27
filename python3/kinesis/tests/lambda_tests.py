@@ -89,20 +89,8 @@ class TestLambdaFunction(unittest.TestCase):
     def _generate_kinesis_event(self, message_builder):
         return {'Records': [self._kinesis_record_builder(message_builder) for _ in range(RECORD_SIZE)]}
 
-    def _validate_data(self, request):
-        buf = BytesIO(request.body)
-        try:
-            body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
-        except KeyError:
-            body = buf
-
-        body_logs = body.readlines()
-        if (request.headers['Content-Encoding'] == 'gzip'):
-            body_logs = body_logs[0].decode('utf-8', errors="ignore")
-            body_logs_list = [e + "}" for e in body_logs.split("}") if e]
-        else:
-            body_logs_list = body_logs
-
+    def _validate_json_data(self, request):
+        body_logs_list = request.body.splitlines()
         for i in range(RECORD_SIZE):
             json_body_log = json.loads(body_logs_list[i])
             for key, value in json_body_log.items():
@@ -137,7 +125,7 @@ class TestLambdaFunction(unittest.TestCase):
             self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
-        self._validate_data(request)
+        self._validate_json_data(request)
 
     @httpretty.activate
     def test_wrong_event(self):

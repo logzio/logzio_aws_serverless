@@ -87,29 +87,7 @@ class TestLambdaFunction(unittest.TestCase):
         event['awslogs']['data'] = enc_data
         return {'dec': data, 'enc': event}
 
-    def _check_data(self, request, data, context):
-        buf = BytesIO(request.body)
-        try:
-            body = gzip.GzipFile(mode='rb', fileobj=buf) if request.headers['Content-Encoding'] == 'gzip' else buf
-        except KeyError:
-            body = buf
-        body_logs_list = body.readlines()
-        if request.headers['Content-Encoding'] == 'gzip':
-            body_logs_list = body_logs_list[0].decode('utf-8')
-            body_logs_list = [e + "}" for e in body_logs_list.split("}") if e]
-        gen_log_events = data['logEvents']
-        for i in range(BODY_SIZE):
-            json_body_log = json.loads(body_logs_list[i])
-            logger.debug("bodyLogsList[{2}]: {0} Vs. genLogEvents[{2}]: {1}"
-                         .format(json.loads(body_logs_list[i])['message'], gen_log_events[i]['message'], i))
-            self.assertEqual(json_body_log['function_version'], context.function_version)
-            self.assertEqual(json_body_log['invoked_function_arn'], context.invoked_function_arn)
-            self.assertEqual(json_body_log['@timestamp'], gen_log_events[i]['timestamp'])
-            self.assertEqual(json_body_log['id'], gen_log_events[i]['id'])
-            self.assertEqual(json_body_log['message'], gen_log_events[i]['message'])
-            self.assertEqual(json_body_log['type'], os.environ['TYPE'])
-
-    def _check_json_data(self, request, data, context):
+    def _validate_json_data(self, request, data, context):
         body_logs_list = request.body.splitlines()
         gen_log_events = data['logEvents']
         for i in range(BODY_SIZE):
@@ -161,7 +139,7 @@ class TestLambdaFunction(unittest.TestCase):
             self.fail("Failed on handling a legit event. Expected status_code = 200")
 
         request = httpretty.HTTPretty.last_request
-        self._check_json_data(request, event['dec'], Context)
+        self._validate_json_data(request, event['dec'], Context)
 
     @httpretty.activate
     def test_large_body(self):

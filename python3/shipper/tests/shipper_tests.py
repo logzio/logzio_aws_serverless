@@ -42,6 +42,10 @@ class TestLambdaFunction(unittest.TestCase):
             return str_log[:-1]
         return str_log
 
+    @staticmethod
+    def _split_str_to_logs(str_logs):
+        return [e + "}" for e in str_logs.split("}") if e]
+
     def validate_data(self, request, logs):
         buf = BytesIO(request.body)
         try:
@@ -49,13 +53,7 @@ class TestLambdaFunction(unittest.TestCase):
         except KeyError:
             body = buf
         body_logs = body.readlines()
-        # On Gzip mode: convert from bytes to string and add new line to separate the different logs
-        if request.headers['Content-Encoding'] == 'gzip':
-            body_logs = body_logs[0].decode('utf-8')
-            body_logs_list = [e + "}" for e in body_logs.split("}") if e]
-        # On string mode: convert every log from byte to str and remove new line
-        else:
-            body_logs_list = [self.delete_new_line(log.decode('utf-8')) for log in body_logs]
+        body_logs_list = [self.delete_new_line(log.decode('utf-8')) for log in body_logs]
         i = 0
         # Validate amount of logs
         if len(body_logs_list) != len(logs):
