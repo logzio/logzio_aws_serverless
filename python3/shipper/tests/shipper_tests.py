@@ -109,29 +109,29 @@ class TestLambdaFunction(unittest.TestCase):
         except KeyError:
             pass
 
-#     @httpretty.activate
-#     def test_retry_request(self):
-#         logs = self.generate_logs()
-#         httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
-#                                 httpretty.Response(body="1st Fail", status=500),
-#                                 httpretty.Response(body="2nd Fail", status=500),
-#                                 httpretty.Response(body="3rd Success", status=200)
-#                             ])
-#         try:
-#             self.ship_logs(logs)
-#         except Exception:
-#             self.fail("Should have succeeded on last try")
-#
-#         request = httpretty.HTTPretty.last_request
-#         self.validate_data(request, logs)
-#
-#     @httpretty.activate
-#     def test_retry_limit(self):
-#         logs = self.generate_logs()
-#         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
-#
-#         with self.assertRaises(MaxRetriesException):
-#             self.ship_logs(logs)
+    @httpretty.activate
+    def test_retry_request(self):
+        logs = self.generate_logs()
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, responses=[
+                                httpretty.Response(body="1st Fail", status=500),
+                                httpretty.Response(body="2nd Fail", status=500),
+                                httpretty.Response(body="3rd Success", status=200)
+                            ])
+        try:
+            self.ship_logs(logs)
+        except Exception:
+            self.fail("Should have succeeded on last try")
+
+        request = httpretty.HTTPretty.last_request
+        self.validate_data(request, logs)
+
+    @httpretty.activate
+    def test_retry_limit(self):
+        logs = self.generate_logs()
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=500)
+
+        with self.assertRaises(MaxRetriesException):
+            self.ship_logs(logs)
 
     @httpretty.activate
     def test_bad_url(self):
