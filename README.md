@@ -4,6 +4,6 @@ This is an AWS Lambda function that ships logs from AWS serverless apps to Logz.
 
 **Note**:
 This project contains code for Python 2 and Python 3.
-We recommend using Python 3 because Python 2 will reach EOL soon.
+We urge you to use Python 3 because Python 2.7 will reach end of life on January 1, 2020.
  
 [Get started with Python 3](https://github.com/logzio/logzio_aws_serverless/tree/support-python3/python3)
