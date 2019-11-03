@@ -9,7 +9,6 @@ import python3.cloudwatch.src.lambda_function as worker
 import string
 import unittest
 from logging.config import fileConfig
-from python3.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
 from io import BytesIO
 import urllib.request
 

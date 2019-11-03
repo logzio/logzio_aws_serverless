@@ -1,6 +1,6 @@
 #  AWS Serverless Shipper - Lambda
 
-This is an AWS Lambda function that ships logs from AWS serverless apps to Logz.io.
+This is an AWS Lambda function that ships logs from AWS services to Logz.io.
 
 **Note**:
 This project contains code for Python 2 and Python 3.

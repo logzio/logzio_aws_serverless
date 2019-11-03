@@ -10,9 +10,7 @@ import python3.kinesis.src.lambda_function as worker
 import string
 import unittest
 import urllib.request
-
 from logging.config import fileConfig
-from python3.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
 from io import BytesIO
 
 
