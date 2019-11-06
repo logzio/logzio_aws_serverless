@@ -50,6 +50,8 @@ def _add_record_kinesis_fields(log, record_kinesis_field):
             try:
                 if os.environ["FORMAT"].lower() == "json":
                     _parse_json(log, record_data)
+                else:
+                    log["message"] = record_data
             except (KeyError, ValueError):
                 # Put data as a string
                 log["message"] = record_data
@@ -89,6 +91,10 @@ def lambda_handler(event, context):
     shipper = LogzioShipper(logzio_url)
     for record in event['Records']:
         log = _parse_kinesis_record(record)
+        try:
+            log["message"] = log["message"].decode("utf-8")
+        except (AttributeError, KeyError):
+            pass
         shipper.add(log)
 
     shipper.flush()

@@ -22,8 +22,8 @@ You have two options to deploy:
 
 ### Step 2 - Upload and configure the Logz.io Lambda shipper
 
-1. On your machine, zip 'lambda_function.py' and 'shipper.py', making sure `shipper.py` is under `shipper` folder:
-    - `mkdir dist; cp -r ../shipper dist/ && cp src/lambda_function.py dist/ && cd dist/ && zip logzio-kinesis shipper/* lambda_function.py`
+1. On your machine, zip 'lambda_function.py' and 'shipper.py':
+    - `mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper && cp src/lambda_function.py dist && cd dist/ && zip logzio-kinesis lambda_function.py python3/shipper/*`
 2. In the **Function code** section of Lambda, choose **Upload a .ZIP file** from the **Code entry type list**.
 3. Click **Upload**, and choose the zip you created on your machine.
 4. In the **Environment variables** section, set your Logz.io account token, URL, and log type:
@@ -37,7 +37,7 @@ You have two options to deploy:
     | `COMPRESS` | If `true`, the Lambda will send compressed logs. If `false`, the Lambda will send uncompressed logs. | `false` |
 
 5. In **Basic settings**, we recommend setting **Memory** to 512 MB, and setting **Timeout** to 1 min 0 sec. Keep an eye on your Lambda usage, and adjust these values accordingly.
-6. Leave the other settings as default.
+6. Leave the other settings as default. 
 
 ### Step 3 - Set the Kinesis event trigger
 
@@ -50,9 +50,8 @@ You have two options to deploy:
 **Prerequisites:** AWS CLI, an S3 bucket, and a Kinesis stream
 
 1. Clone the logzio_aws_serverless repo to your machine (https://github.com/logzio/logzio_aws_serverless.git).
-2. `cd` into `logzio_aws_serverless/python3/kinesis/`. Zip 'lambda_function.py' and 'shipper.py' with one of these options:
-    - `make build` creates the zip at 'dist/logzio-kinesis-stream-shipper.zip'
-    - `mkdir dist; cp -r ../shipper dist/ && cp src/lambda_function.py dist/ && cd dist/ && zip logzio-kinesis shipper/* lambda_function.py`
+2. Run `cd logzio_aws_serverless/python3/kinesis/`. Zip 'lambda_function.py' and 'shipper.py':
+    - `mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper && cp src/lambda_function.py dist && cd dist/ && zip logzio-kinesis lambda_function.py python3/shipper/*`
 3. Upload the package to your S3 bucket.
  
       ```bash

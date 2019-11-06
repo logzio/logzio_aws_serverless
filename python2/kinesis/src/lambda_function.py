@@ -50,6 +50,8 @@ def _add_record_kinesis_fields(log, record_kinesis_field):
             try:
                 if os.environ["FORMAT"].lower() == "json":
                     _parse_json(log, record_data)
+                else:
+                    log["message"] = record_data
             except (KeyError, ValueError):
                 # Put data as a string
                 log["message"] = record_data
@@ -78,27 +80,7 @@ def _parse_kinesis_record(record):
 
 def lambda_handler(event, context):
     # type: (dict, 'LambdaContext') -> None
-    # kinesis event:
-    # {
-    #     "Records": [
-    #         {
-    #             "kinesis": {
-    #                 "partitionKey": "partitionKey-03",
-    #                 "kinesisSchemaVersion": "1.0",
-    #                 "data": "SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=",
-    #                 "sequenceNumber": "49545115243490985018280067714973144582180062593244200961",
-    #                 "approximateArrivalTimestamp": 1539783387.44
-    #             },
-    #             "eventSource": "aws:kinesis",
-    #             "eventID": "shardId-000000000000:49545115243490985018280067714973144582180062593244200961",
-    #             "invokeIdentityArn": "arn:aws:iam::EXAMPLE",
-    #             "eventVersion": "1.0",
-    #             "eventName": "aws:kinesis:record",
-    #             "eventSourceARN": "arn:aws:kinesis:EXAMPLE",
-    #             "awsRegion": "us-east-1"
-    #         }
-    #     ]
-    # }
+
     logger.info("Received {} raw Kinesis records.".format(len(event["Records"])))
     try:
         logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
