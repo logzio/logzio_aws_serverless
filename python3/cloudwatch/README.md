@@ -20,7 +20,6 @@ You have two options to deploy:
 2. Click **Create function** to create a new Lambda function.
 3. Choose **Author from scratch**, and enter the following information:
     - **Name:** Short name for your new Lambda function. We suggest adding the log type to the name.
-    - **Name:** Short name for your new Lambda function. We suggest adding the log type to the name.
     - **Runtime:** Choose **Python 3.7**
     - **Role:** Click **Create new role from template(s)**. Under **Existing role**, select **Basic Edge Lambda permissions**
 4. Click **Create Function**, in the bottom right corner of the page. You'll need this in the next step, so keep this page open.
