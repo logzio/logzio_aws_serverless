@@ -1,85 +1,176 @@
 # Kinesis Stream Shipper - Lambda
 
-This is an AWS Lambda function that consume kinesis stream and sends logs to Logz.io in bulk over HTTPS.
+This is an AWS Lambda function that consumes a Kinesis stream and sends logs to Logz.io in bulk over HTTPS.
 
-You have two options to deploy:
+* Option 1: [Manual Lambda configuration](#manual-lambda-configuration)
+* Option 2: [Automated CloudFormation deployment](#automated-cloudformation-deployment)
 
-* [Option 1: Manually deploy the Lambda function](#Option-1-Manually-deploy-the-Lambda-function)
+<!-- tab:start -->
+<div id="manual-lambda-configuration">
 
-* [Option 2: Automatic deployment using CloudFormation](#Option-2-Automatic-deployment-using-CloudFormation)
+#### Manual configuration with a Lambda function
 
-## Option 1: Manually deploy the Lambda function
+<div class="tasklist">
 
-### Step 1 - Create the Lambda Function
+##### 1. Create a new Lambda function
 
-1. Sign in to your AWS account and open AWS Lambda.
-2. Click **Create function** to create a new Lambda function.
-3. Choose **Author from scratch**, and enter the following information:
-    - **Name:** Short name for your new Lambda function. We suggest adding the log type to the name.
-    - **Runtime:** Choose **Python 3.7**
-    - **Role:** Click **Create new role from template(s)**. Under **Existing role**, select **Basic Edge Lambda** and **AWSLambdaKinesisExecutionRole** permissions
-4. Click **Create Function**, in the bottom right corner of the page. You'll need this the next step, so keep this page open.
+This Lambda function will consume a Kinesis data stream and sends the logs to Logz.io in bulk over HTTP.
 
-### Step 2 - Upload and configure the Logz.io Lambda shipper
+Open the AWS Lambda Console, and click **Create function**.
+Choose **Author from scratch**, and use this information:
 
-1. On your machine, zip 'lambda_function.py' and 'shipper.py':
-    - `mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper && cp src/lambda_function.py dist && cd dist/ && zip logzio-kinesis lambda_function.py python3/shipper/*`
-2. In the **Function code** section of Lambda, choose **Upload a .ZIP file** from the **Code entry type list**.
-3. Click **Upload**, and choose the zip you created on your machine.
-4. In the **Environment variables** section, set your Logz.io account token, URL, and log type:
+* **Name**: We suggest adding the log type to the name, but you can name this function whatever you want.
+* **Runtime**: Choose **Python 3.7**
+* **Role**: Use a role that has `AWSLambdaKinesisExecutionRole` permissions.
 
-    | Key | Value | Default |
-    |---|---|---|
-    | `TOKEN` | **Required**. Your Logz.io account token, which can find in your [Settings page](https://app.logz.io/#/dashboard/settings/general) in Logz.io. | |
-    | `TYPE` | The log type you'll use with this Lambda. Please note that you should create a new Lambda for each log type you use. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or your custom log type | `logzio_kinesis` |
-    | `FORMAT` | `json` or `text`. If `json`, the lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. | `text` |
-    | `URL` | **Required**. Your Logz.io listener URL. If you are in the EU region, use `https://listener-eu.logz.io:8071`. Otherwise, use `https://listener.logz.io:8071`. If you don't know your region, check your login URL. _app-eu.logz.io_ is the EU data center. _app.logz.io_ is the US data center. |
-    | `COMPRESS` | If `true`, the Lambda will send compressed logs. If `false`, the Lambda will send uncompressed logs. | `false` |
+Click **Create Function** (bottom right corner of the page). After a few moments, you'll see configuration options for your Lambda function.
 
-5. In **Basic settings**, we recommend setting **Memory** to 512 MB, and setting **Timeout** to 1 min 0 sec. Keep an eye on your Lambda usage, and adjust these values accordingly.
-6. Leave the other settings as default. 
+You'll need this page later on, so keep it open.
 
-### Step 3 - Set the Kinesis event trigger
+##### 2. Zip the source files
 
-1. In the **Designer** section (at the top of the page), find the **Add triggers** list. Choose **Kinesis** from this list.
-2. In the **Configure triggers** section, choose the **Kinesis stream** from which the Logz.io Lambda collects the logs.
-3. Click **Add** to add the trigger, and then click **Save** at the top of the page to save all your configurations.
+Clone the Kinesis Stream Shipper - Lambda project from GitHub to your computer,
+and zip the Python files in the `src/` folder.
 
-## Option 2: Automatic deployment using CloudFormation
+```shell
+git clone https://github.com/logzio/logzio_aws_serverless.git \
+&& cd logzio_aws_serverless/python3/kinesis/ \
+&& mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper \
+&& cp src/lambda_function.py dist \
+&& cd dist/ \
+&& zip logzio-kinesis lambda_function.py python3/shipper/*
+```
 
-**Prerequisites:** AWS CLI, an S3 bucket, and a Kinesis stream
+You'll upload `logzio-kinesis.zip` in the next step.
 
-1. Clone the logzio_aws_serverless repo to your machine (https://github.com/logzio/logzio_aws_serverless.git).
-2. Run `cd logzio_aws_serverless/python3/kinesis/`. Zip 'lambda_function.py' and 'shipper.py':
-    - `mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper && cp src/lambda_function.py dist && cd dist/ && zip logzio-kinesis lambda_function.py python3/shipper/*`
-3. Upload the package to your S3 bucket.
- 
-      ```bash
-     aws cloudformation package 
-        --template sam-template.yaml
-        --output-template-file kinesis-template.output.yaml 
-        --s3-bucket <your_s3_bucket>
-     ```
+##### 3. Upload the zip file and set environment variables
 
-4. The following is an example on how to deploy CloudFormation. Replace the parameters with the ones you need:
+In the _Function_ code section of Lambda, find the **Code entry type** list.
+Choose **Upload a .ZIP file** from this list.
 
-    ```bash
-    aws cloudformation deploy 
-    --template-file $(pwd)/cloudformation-template.output.yaml 
-    --stack-name logzio-kinesis-logs-lambda-stack 
-    --parameter-overrides  
-       LogzioTOKEN='<your_logizo_token>'
-       KinesisStream='<your_kinesis_stream_name>'  
-    --capabilities "CAPABILITY_IAM"
-    ```
+Click **Upload**, and choose the zip file you created earlier (`logzio-kinesis.zip`).
 
-    | Key | Value | Default |
-    |---|---|---|
-    | `LogzioTOKEN` | **Required**. Your Logz.io account token, which can find in your [Settings page](https://app.logz.io/#/dashboard/settings/general) in Logz.io. | |
-    | `LogzioTYPE` | The log type you'll use with this Lambda. Please note that you should create a new Lambda for each log type you use. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or your custom log type | `logzio_kinesis` |
-    | `LogzioFORMAT` | `json` or `text`. If `json`, the lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. | `text` |
-    | `LogzioURL` | Your Logz.io listener URL. If you are in the EU region, use `https://listener-eu.logz.io:8071`. Otherwise, use `https://listener.logz.io:8071`. If you don't know your region, check your login URL. _app-eu.logz.io_ is the EU data center. _app.logz.io_ is the US data center. | `https://listener.logz.io:8071` |
-    | `LogzioCOMPRESS` | If `true`, the Lambda will send compressed logs. If `false`, the Lambda will send uncompressed logs. | `false` |
-    | `KinesisStream` | **Required**. The name of a Kinesis stream to listen for updates on. | | 
-    | `KinesisStreamBatchSize` | The largest number of records that will be read from your stream at once. | `100` |
-    | `KinesisStreamStartingPosition` | The position in the stream to start reading from. For more information, see [ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html) in the Amazon Kinesis API Reference. | `LATEST` |
+In the _Environment variables_ section, set your Logz.io account token, URL, and log type, and any other variables that you need to use.
+
+###### Environment variables
+
+| Parameter | Description |
+|---|---|
+| TOKEN _(Required)_ | Replace `<<SHIPPING-TOKEN>>` with the [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
+| URL _(Required)_ | Your region's listener host. For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). |
+| TYPE _(Required)_ | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
+| FORMAT _(Default: `text`)_ | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
+| COMPRESS _(Default: `false`)_ | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
+{:.paramlist}
+
+##### 4. Configure the function's basic settings
+
+In Basic settings, we recommend starting with these settings:
+
+* **Memory**: 512 MB
+* **Timeout**: 1 min 0 sec
+
+These default settings are just a starting point.
+Check your Lambda usage regularly, and adjust these values if you need to.
+{:.info-box.note}
+
+##### 5. Set the Kinesis event trigger
+
+Find the **Add triggers** list (left side of the Designer panel). Choose **Kinesis** from this list.
+
+Below the Designer, you'll see the Configure triggers panel. Choose the **Kinesis stream** that the Lambda function will watch.
+
+Click **Add**, and then click **Save** at the top of the page.
+
+##### 6. Check Logz.io for your logs
+
+Give your logs some time to get from your system to ours, and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
+
+If you still don't see your logs, see [log shipping troubleshooting](https://docs.logz.io/user-guide/log-shipping/log-shipping-troubleshooting.html).
+
+</div>
+
+</div>
+<!-- tab:end -->
+
+<!-- tab:start -->
+<div id="automated-cloudformation-deployment">
+
+#### Automated CloudFormation deployment
+
+**Before you begin, you'll need**:
+AWS CLI,
+an S3 bucket to store the CloudFormation package
+
+<div class="tasklist">
+
+##### 1. Zip the source files
+
+Clone the Kinesis Stream Shipper - Lambda project from GitHub to your computer,
+and zip the Python files in the `src/` folder.
+
+```shell
+git clone https://github.com/logzio/logzio_aws_serverless.git \
+&& cd logzio_aws_serverless/python3/kinesis/ \
+&& mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper \
+&& cp src/lambda_function.py dist \
+&& cd dist/ \
+&& zip logzio-kinesis lambda_function.py python3/shipper/*
+```
+
+##### 2. Create the CloudFormation package and upload to S3
+
+Create the CloudFormation package using the AWS CLI.
+Replace `<<YOUR-S3-BUCKET>>` with the S3 bucket name where you'll be uploading this package.
+
+```shell
+cd ../ \
+&& aws cloudformation package \
+  --template sam-template.yaml \
+  --output-template-file kinesis-template.output.yaml \
+  --s3-bucket <<YOUR-S3-BUCKET>>
+```
+
+##### 3. Deploy the CloudFormation package
+
+Deploy the CloudFormation package using AWS CLI.
+
+For a complete list of options, see the configuration parameters below the code block. 👇
+
+```shell
+aws cloudformation deploy
+--template-file $(pwd)/cloudformation-template.output.yaml
+--stack-name logzio-kinesis-logs-lambda-stack
+--parameter-overrides
+  LogzioTOKEN='<<SHIPPING-TOKEN>>'
+  KinesisStream='<<KINESIS-STREAM-NAME>>'
+--capabilities "CAPABILITY_IAM"
+```
+
+###### Parameters
+
+| Parameter | Description |
+|---|---|
+| LogzioTOKEN _(Required)_ | Replace `<<SHIPPING-TOKEN>>` with the [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
+| KinesisStream _(Required)_ | The name of the Kinesis stream where this function will listen for updates. |
+| LogzioURL _(Default: `https://listener.logz.io:8071`)_ | Your region's listener host. For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). |
+| LogzioTYPE _(Default: `logzio_kinesis_stream`)_ | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
+| LogzioFORMAT _(Default: `text`)_ | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
+| LogzioCOMPRESS _(Default: `false`)_ | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
+| KinesisStreamBatchSize _(Default: `100`)_ | The largest number of records to read from your stream at one time. |
+| KinesisStreamStartingPosition _(Default: `LATEST`)_ | The position in the stream to start reading from. For more information, see [ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html) in the Amazon Kinesis API Reference. |
+{:.paramlist}
+
+##### 4. Check Logz.io for your logs
+
+Give your logs some time to get from your system to ours, and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
+
+If you still don't see your logs, see [log shipping troubleshooting](https://docs.logz.io/user-guide/log-shipping/log-shipping-troubleshooting.html).
+
+</div>
+
+</div>
+<!-- tab:end -->
+
+</div>
+<!-- tabContainer:end -->
