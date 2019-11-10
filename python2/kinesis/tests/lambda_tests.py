@@ -7,12 +7,12 @@ import logging
 import os
 import random
 
-import kinesis.src.lambda_function as worker
+import python2.kinesis.src.lambda_function as worker
 import string
 import unittest
 
 from logging.config import fileConfig
-from shipper.shipper import MaxRetriesException, UnauthorizedAccessException, BadLogsException, UnknownURL
+from python2.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
 from StringIO import StringIO
 
 # CONST
