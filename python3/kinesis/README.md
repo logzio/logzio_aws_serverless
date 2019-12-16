@@ -61,7 +61,6 @@ In the _Environment variables_ section, set your Logz.io account token, URL, and
 | TYPE _(Required)_ | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
 | FORMAT _(Default: `text`)_ | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
 | COMPRESS _(Default: `false`)_ | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
-{:.paramlist}
 
 ##### 4. Configure the function's basic settings
 
@@ -159,7 +158,6 @@ aws cloudformation deploy
 | LogzioCOMPRESS _(Default: `false`)_ | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
 | KinesisStreamBatchSize _(Default: `100`)_ | The largest number of records to read from your stream at one time. |
 | KinesisStreamStartingPosition _(Default: `LATEST`)_ | The position in the stream to start reading from. For more information, see [ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html) in the Amazon Kinesis API Reference. |
-{:.paramlist}
 
 ##### 4. Check Logz.io for your logs
 
