@@ -6,7 +6,6 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 * Option 1: [Manual Lambda configuration](#manual-lambda-configuration)
 * Option 2: [Automated CloudFormation deployment](#automated-cloudformation-deployment)
 
-<!-- tab:start -->
 <div id="manual-lambda-configuration">
 
 #### Manual configuration with a Lambda function
@@ -56,11 +55,12 @@ In the _Environment variables_ section, set your Logz.io account token, URL, and
 
 | Parameter | Description |
 |---|---|
-| TOKEN _(Required)_ | Replace `<<SHIPPING-TOKEN>>` with the [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
-| URL _(Required)_ | {% Your region's listener host. For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). |
-| TYPE _(Required)_ | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
-| FORMAT _(Default: `text`)_ | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
-| COMPRESS _(Default: `false`)_ | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
+| TOKEN (Required) | The [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
+| URL (Required) | Protocol, listener host, and port (for example, `https://<<LISTENER-HOST>>:8071`). <br > Replace `<<LISTENER-HOST>>` with your region's listener host (for example, `listener.logz.io`). For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). <!-- logzio-inject:listener-url --> |
+| TYPE (Default: `logzio_cloudwatch_lambda`) | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
+| FORMAT (Default: `text`) | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
+| COMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
+| ENRICH | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`. |
 
 ##### 4. Configure the function's basic settings
 
@@ -151,14 +151,12 @@ aws cloudformation deploy
 
 | Parameter | Description |
 |---|---|
-| LogzioTOKEN _(Required)_ | Replace `<<SHIPPING-TOKEN>>` with the [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
-| KinesisStream _(Required)_ | The name of the Kinesis stream where this function will listen for updates. |
-| LogzioURL _(Default: `https://listener.logz.io:8071`)_ | Your region's listener host. For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). |
-| LogzioTYPE _(Default: `logzio_kinesis_stream`)_ | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
-| LogzioFORMAT _(Default: `text`)_ | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
-| LogzioCOMPRESS _(Default: `false`)_ | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
-| KinesisStreamBatchSize _(Default: `100`)_ | The largest number of records to read from your stream at one time. |
-| KinesisStreamStartingPosition _(Default: `LATEST`)_ | The position in the stream to start reading from. For more information, see [ShardIteratorType](https://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html) in the Amazon Kinesis API Reference. |
+| LogzioTOKEN (Required) | Replace `<<SHIPPING-TOKEN>>` with the [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. <!-- logzio-inject:account-token --> |
+| LogzioURL (Default: `https://listener.logz.io:8071`) | Protocol, listener host, and port (for example, `https://<<LISTENER-HOST>>:8071`). <br > The [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
+| LogzioTYPE (Default: `logzio_cloudwatch_logs`) | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
+| LogzioFORMAT (Default: `text`) | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
+| LogzioCOMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
+| LogzioENRICH | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`. |
 
 ##### 4. Check Logz.io for your logs
 
@@ -168,3 +166,6 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 
 </div>
 <!-- tab:end -->
+
+</div>
+<!-- tabContainer:end -->
