@@ -9,12 +9,13 @@ from io import BytesIO
 KEY_INDEX = 0
 VALUE_INDEX = 1
 LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
-          'warning', 'error', 'err', 'critical', 'crit', 'fatal',
-          'severe', 'emerg', 'emergency']
+              'warning', 'error', 'err', 'critical', 'crit', 'fatal',
+              'severe', 'emerg', 'emergency']
 
 # set logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
 
 def _extract_aws_logs_data(event):
     # type: (dict) -> dict
@@ -47,7 +48,7 @@ def _extract_lambda_log_message(log, log_group):
         try:
             start_level = str_message.index('[')
             end_level = str_message.index(']')
-            log_level = str_message[start_level+1:end_level]
+            log_level = str_message[start_level + 1:end_level]
             if log_level.lower() in LOG_LEVELS:
                 log['log_level'] = log_level
             start_split = end_level + 2
@@ -56,10 +57,11 @@ def _extract_lambda_log_message(log, log_group):
             start_split = 0
 
         message_parts = str_message[start_split:].split('\t')
-        if len(message_parts) == 3:
+        size = len(message_parts)
+        if (size == 3 or size == 4):
             log['@timestamp'] = message_parts[0]
             log['requestID'] = message_parts[1]
-            log['message'] = message_parts[2]
+            log['message'] = message_parts[size - 1]
 
 
 def _parse_cloudwatch_log(log, additional_data):
@@ -67,7 +69,6 @@ def _parse_cloudwatch_log(log, additional_data):
     if '@timestamp' not in log:
         log['@timestamp'] = str(log['timestamp'])
         del log['timestamp']
-
     _extract_lambda_log_message(log, additional_data['logGroup'])
     log.update(additional_data)
 
@@ -106,7 +107,6 @@ def _get_additional_logs_data(aws_logs_data, context):
     except KeyError:
         logger.info("Failed to find 'TYPE' environment variables. Using 'logzio_cloudwatch_lambda' instead")
         additional_data['type'] = 'logzio_cloudwatch_lambda'
-
     return additional_data
 
 
@@ -117,7 +117,6 @@ def lambda_handler(event, context):
     except KeyError as e:
         logger.error("Missing one of the environment variable: {}".format(e))
         raise
-
     aws_logs_data = _extract_aws_logs_data(event)
     additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper(logzio_url)
@@ -128,6 +127,7 @@ def lambda_handler(event, context):
             raise TypeError("Expected log inside logEvents to be a dict but found another type")
 
         _parse_cloudwatch_log(log, additional_data)
-        shipper.add(log)
+        if not log['message'].startswith('START') and not log['message'].startswith('END') and not log['message'].startswith('REPORT'):
+            shipper.add(log)
 
     shipper.flush()
