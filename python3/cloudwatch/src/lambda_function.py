@@ -117,11 +117,12 @@ def lambda_handler(event, context):
 
     logger.info("About to send {} logs".format(len(aws_logs_data['logEvents'])))
     for log in aws_logs_data['logEvents']:
-        if not isinstance(log, dict):
-            raise TypeError("Expected log inside logEvents to be a dict but found another type")
+        is_extra_data = log['message'].startswith('START') or log['message'].startswith('END') or log['message'].startswith('REPORT')
+        if not is_extra_data:
+            if not isinstance(log, dict):
+                raise TypeError("Expected log inside logEvents to be a dict but found another type")
 
-        _parse_cloudwatch_log(log, additional_data)
-        if not log['message'].startswith('START') and not log['message'].startswith('END') and not log['message'].startswith('REPORT'):
+            _parse_cloudwatch_log(log, additional_data)
             shipper.add(log)
 
     shipper.flush()
