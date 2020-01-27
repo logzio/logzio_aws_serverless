@@ -34,11 +34,6 @@ def _extract_aws_logs_data(event):
 def _extract_lambda_log_message(log, log_group):
     if '/aws/lambda/' in log_group:
         str_message = str(log['message'])
-        if str_message.startswith('START') \
-                or str_message.startswith('END') \
-                or str_message.startswith('REPORT'):
-            return
-
         try:
             start_level = str_message.index('[')
             end_level = str_message.index(']')
