@@ -8,11 +8,11 @@ For detailed information, read our [blog post](https://logz.io/blog/cloudwatch-l
 
 <div id="manual-lambda-configuration">
 
-#### Manual configuration with a Lambda function
+## Manual configuration with a Lambda function
 
 <div class="tasklist">
-
-##### 1. Create a new Lambda function
+  
+#### 1. Create a new Lambda function
 
 This Lambda function will collect CloudWatch logs and sends them to Logz.io in bulk over HTTP.
 
@@ -27,7 +27,7 @@ Click **Create Function** (bottom right corner of the page). After a few moments
 
 You'll need this page later on, so keep it open.
 
-##### 2. Zip the source files
+#### 2. Zip the source files
 
 Clone the CloudWatch Logs Shipper - Lambda project from GitHub to your computer,
 and zip the Python files in the `src/` folder.
@@ -43,7 +43,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 
 You'll upload `logzio-cloudwatch.zip` in the next step.
 
-##### 3. Upload the zip file and set environment variables
+#### 3. Upload the zip file and set environment variables
 
 In the _Function_ code section of Lambda, find the **Code entry type** list. Choose **Upload a .ZIP file** from this list.
 
@@ -62,7 +62,7 @@ In the _Environment variables_ section, set your Logz.io account token, URL, and
 | COMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
 | ENRICH | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`. |
 
-##### 4. Configure the function's basic settings
+#### 4. Configure the function's basic settings
 
 In Basic settings, we recommend starting with these settings:
 
@@ -73,7 +73,7 @@ In Basic settings, we recommend starting with these settings:
 These default settings are just a starting point.
 Check your Lambda usage regularly, and adjust these values if you need to.
 
-##### 5. Set the CloudWatch Logs event trigger
+#### 5. Set the CloudWatch Logs event trigger
 
 Find the **Add triggers** list (left side of the Designer panel). Choose **CloudWatch Logs** from this list.
 
@@ -83,7 +83,7 @@ Type a **Filter name** (required) and **Filter pattern** (optional).
 
 Click **Add**, and then click **Save** at the top of the page.
 
-##### 6. Check Logz.io for your logs
+#### 6. Check Logz.io for your logs
 
 Give your logs some time to get from your system to ours, and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
 
@@ -97,7 +97,7 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 <!-- tab:start -->
 <div id="automated-cloudformation-deployment">
 
-#### Automated CloudFormation deployment
+## Automated CloudFormation deployment
 
 **Before you begin, you'll need**:
 AWS CLI,
@@ -105,7 +105,7 @@ an S3 bucket to store the CloudFormation package
 
 <div class="tasklist">
 
-##### 1. Zip the source files
+#### 1. Zip the source files
 
 Clone the CloudWatch Logs Shipper - Lambda project from GitHub to your computer,
 and zip the Python files in the `src/` folder.
@@ -119,7 +119,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 && zip logzio-cloudwatch lambda_function.py python3/shipper/*
 ```
 
-##### 2. Create the CloudFormation package and upload to S3
+#### 2. Create the CloudFormation package and upload to S3
 
 Create the CloudFormation package using the AWS CLI.
 Replace `<<YOUR-S3-BUCKET>>` with the S3 bucket name where you'll be uploading this package.
@@ -132,7 +132,7 @@ cd ../ \
   --s3-bucket <<YOUR-S3-BUCKET>>
 ```
 
-##### 3. Deploy the CloudFormation package
+#### 3. Deploy the CloudFormation package
 
 Deploy the CloudFormation package using AWS CLI.
 
@@ -158,7 +158,7 @@ aws cloudformation deploy
 | LogzioCOMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
 | LogzioENRICH | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`. |
 
-##### 4. Check Logz.io for your logs
+#### 4. Check Logz.io for your logs
 
 Give your logs some time to get from your system to ours, and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
 
