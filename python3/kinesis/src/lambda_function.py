@@ -38,7 +38,7 @@ def _get_type(data):
         json_data = json.loads(data)
         return json_data["source"].split('.')[1]
     except (KeyError, ValueError):
-        return "kinesis_lambda"
+        return "logzio_kinesis_stream"
 
 
 def _add_record_kinesis_fields(log, record_kinesis_field):
