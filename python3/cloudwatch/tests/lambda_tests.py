@@ -141,6 +141,23 @@ class TestLambdaFunction(unittest.TestCase):
         for i in range(len(message_list)):
             self.assertEqual(message_list[i], original_message_list[i])
 
+    def _test_aws_event(self, event_builder, size_of_event):
+        event = {'awslogs': {}}
+        data_body = self._data_body_builder(event_builder, 1)
+        uniq_message = data_body['logEvents'][0]['message'].split("\t")[size_of_event-1]
+        data_body['logGroup'] = '/aws/lambda/TestlogGroup'
+        enc_data = self.gzipData(data_body)
+        event['awslogs']['data'] = enc_data
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
+        try:
+            worker.lambda_handler(event, Context)
+        except Exception as e:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
+        request = httpretty.HTTPretty.last_request
+        original_log = event_builder().split('\t')
+        original_log[size_of_event-1] = uniq_message
+        self._validate_aws_event(request, original_log, size_of_event)
+
     @httpretty.activate
     def test_wrong_format_event(self):
         event = {'awslogs': {}}
@@ -158,23 +175,6 @@ class TestLambdaFunction(unittest.TestCase):
 
         with self.assertRaises(Exception):
             worker.lambda_handler(event, Context)
-
-    def _test_aws_event(self, event_builder, size_of_event):
-        event = {'awslogs': {}}
-        data_body = self._data_body_builder(event_builder, 1)
-        uniq_message = data_body['logEvents'][0]['message'].split("\t")[size_of_event-1]
-        data_body['logGroup'] = '/aws/lambda/TestlogGroup'
-        enc_data = self.gzipData(data_body)
-        event['awslogs']['data'] = enc_data
-        httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
-        try:
-            worker.lambda_handler(event, Context)
-        except Exception as e:
-            self.fail("Failed on handling a legit event. Expected status_code = 200")
-        request = httpretty.HTTPretty.last_request
-        original_log = event_builder().split('\t')
-        original_log[size_of_event-1] = uniq_message
-        self._validate_aws_event(request, original_log, size_of_event)
 
     @httpretty.activate
     def test_nodejs_format_event(self):
