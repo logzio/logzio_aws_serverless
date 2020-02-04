@@ -15,6 +15,8 @@ import urllib.request
 # CONST
 BODY_SIZE = 10
 STRING_LEN = 10
+python_event_size = 3
+nodejs_event_size = 4
 
 fileConfig('logging_config.ini')
 logger = logging.getLogger(__name__)
@@ -28,6 +30,7 @@ class Context(object):
 
 class TestLambdaFunction(unittest.TestCase):
     """ Unit testing logzio lambda function """
+
     def setUp(self):
         # Set os.environ for tests
         os.environ['URL'] = "https://listener.logz.io:8071"
@@ -51,7 +54,7 @@ class TestLambdaFunction(unittest.TestCase):
 
     @staticmethod
     # Build random string with STRING_LEN chars
-    def _json_string_python_builder():
+    def _json_string_builder():
         s = string.ascii_lowercase + string.digits
         return json.dumps({
             'timestamp': 'abcd',
@@ -60,9 +63,16 @@ class TestLambdaFunction(unittest.TestCase):
         })
 
     @staticmethod
-    def _json_string_nodejs_builder():
+    def _json_nodejs_builder():
         s = string.ascii_lowercase + string.digits
-        return "{'timestamp': 'abcd'\t'requestID': 'efgh'\t'type':'INFO''message':'\t'.join(random.sample(s, STRING_LEN))}"
+        message = ','.join(random.sample(s, STRING_LEN))
+        return "1580747176629\t12345678\tINFO\t" + message
+
+    @staticmethod
+    def _json_python_builder():
+        s = string.ascii_lowercase + string.digits
+        message = ','.join(random.sample(s, STRING_LEN))
+        return "1580747176629\t12345678\t" + message
 
     @staticmethod
     def _random_string_builder():
@@ -73,23 +83,31 @@ class TestLambdaFunction(unittest.TestCase):
     # Create aws data json format string
     def _data_body_builder(message_builder, body_size):
         data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
-
         # Each awslog event contain BODY_SIZE messages
         for i in range(body_size):
             log = {"timestamp": "i", "message": message_builder(), "id": i}
             data_body['logEvents'].append(log)
-
         data_body['owner'] = 'Test'
         data_body['subscriptionFilters'] = ['TestFilters']
         data_body['logGroup'] = 'TestlogGroup'
         return data_body
 
-
+    @staticmethod
+    # Create aws data json format string
+    def _data_nodejs_body_builder(message_builder, body_size):
+        data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
+        # Each awslog event contain BODY_SIZE messages
+        for i in range(body_size):
+            log = message_builder()
+            data_body['logEvents'].append(log)
+        data_body['owner'] = 'Test'
+        data_body['subscriptionFilters'] = ['TestFilters']
+        data_body['logGroup'] = 'TestlogGroup'
+        return data_body
 
     # Encrypt and zip the data as awslog format require
     def _generate_aws_logs_event(self, message_builder, body_size=BODY_SIZE):
         event = {'awslogs': {}}
-
         data_body = self._data_body_builder(message_builder, body_size)
         enc_data = self.gzipData(data_body)
         event['awslogs']['data'] = enc_data
@@ -111,6 +129,18 @@ class TestLambdaFunction(unittest.TestCase):
             for key, value in json_message.items():
                 self.assertEqual(json_body_log[key], value)
 
+    def _validate_aws_event(self, request, original_log, size_of_event):
+        body_logs = json.loads(request.body.decode("utf-8"))
+
+        self.assertEqual(body_logs['@timestamp'], original_log[0])
+        self.assertEqual(body_logs['requestID'], original_log[1])
+        if 'log_level' in body_logs:
+            self.assertEqual(body_logs['log_level'], original_log[2])
+        message_list = original_log[size_of_event-1].split(",")
+        original_message_list = body_logs['message'].split(",")
+        for i in range(len(message_list)):
+            self.assertEqual(message_list[i], original_message_list[i])
+
     @httpretty.activate
     def test_wrong_format_event(self):
         event = {'awslogs': {}}
@@ -129,10 +159,10 @@ class TestLambdaFunction(unittest.TestCase):
         with self.assertRaises(Exception):
             worker.lambda_handler(event, Context)
 
-    @httpretty.activate
-    def test_aws_format_event(self):
+    def _test_aws_event(self, event_builder, size_of_event):
         event = {'awslogs': {}}
-        data_body = self._data_body_builder(self._json_string_nodejs_builder, BODY_SIZE)
+        data_body = self._data_body_builder(event_builder, 1)
+        uniq_message = data_body['logEvents'][0]['message'].split("\t")[size_of_event-1]
         data_body['logGroup'] = '/aws/lambda/TestlogGroup'
         enc_data = self.gzipData(data_body)
         event['awslogs']['data'] = enc_data
@@ -141,11 +171,23 @@ class TestLambdaFunction(unittest.TestCase):
             worker.lambda_handler(event, Context)
         except Exception as e:
             self.fail("Failed on handling a legit event. Expected status_code = 200")
+        request = httpretty.HTTPretty.last_request
+        original_log = event_builder().split('\t')
+        original_log[size_of_event-1] = uniq_message
+        self._validate_aws_event(request, original_log, size_of_event)
+
+    @httpretty.activate
+    def test_nodejs_format_event(self):
+        self._test_aws_event(self._json_nodejs_builder, nodejs_event_size)
+
+    @httpretty.activate
+    def test_python_format_event(self):
+        self._test_aws_event(self._json_python_builder, python_event_size)
 
     @httpretty.activate
     def test_json_type_request(self):
         os.environ['FORMAT'] = "json"
-        event = self._generate_aws_logs_event(self._json_string_python_builder)
+        event = self._generate_aws_logs_event(self._json_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
         try:
@@ -174,7 +216,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_enrich_event(self):
         os.environ['ENRICH'] = "environment=testing;foo=bar"
-        event = self._generate_aws_logs_event(self._json_string_python_builder)
+        event = self._generate_aws_logs_event(self._json_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
         try:
@@ -193,7 +235,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_enrich_event_empty(self):
         os.environ['ENRICH'] = ""
-        event = self._generate_aws_logs_event(self._json_string_python_builder)
+        event = self._generate_aws_logs_event(self._json_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
         try:
@@ -211,7 +253,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_enrich_event_bad_format(self):
         os.environ['ENRICH'] = "environment"
-        event = self._generate_aws_logs_event(self._json_string_python_builder)
+        event = self._generate_aws_logs_event(self._json_string_builder)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
 

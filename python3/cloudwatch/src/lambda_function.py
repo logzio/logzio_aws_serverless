@@ -12,6 +12,10 @@ LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
               'warning', 'error', 'err', 'critical', 'crit', 'fatal',
               'severe', 'emerg', 'emergency']
 
+python_event_size = 3
+nodejs_event_size = 4
+
+
 # set logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -46,29 +50,21 @@ def _extract_lambda_log_message(log):
 
     message_parts = str_message[start_split:].split('\t')
     size = len(message_parts)
-    if size == 3 or size == 4:
+    if size == python_event_size or size == nodejs_event_size:
         log['@timestamp'] = message_parts[0]
         log['requestID'] = message_parts[1]
         log['message'] = message_parts[size - 1]
-    else:
-        raise TypeError("Exception: Event is not valid.")
+    if size == nodejs_event_size:
+        log['log_level'] = message_parts[2]
 
 
-def _parse_cloudwatch_log(log, additional_data):
-    # type: (dict, dict) -> None
-    add_log = True
+def _put_timestamp(log):
     if '@timestamp' not in log:
         log['@timestamp'] = str(log['timestamp'])
         del log['timestamp']
 
-    if '/aws/lambda/' in additional_data['logGroup']:
-        if _is_valid_log(log):
-            _extract_lambda_log_message(log)
-        else:
-            return False
-    log.update(additional_data)
 
-    # If FORMAT is json treat message as a json
+def _parse_to_json(log):
     try:
         if os.environ['FORMAT'].lower() == 'json':
             json_object = json.loads(log['message'])
@@ -76,7 +72,19 @@ def _parse_cloudwatch_log(log, additional_data):
                 log[key] = value
     except (KeyError, ValueError) as e:
         pass
-    return add_log
+
+
+def _parse_cloudwatch_log(log, additional_data):
+    # type: (dict, dict) -> None
+    _put_timestamp(log)
+    if '/aws/lambda/' in additional_data['logGroup']:
+        if _is_valid_log(log):
+            _extract_lambda_log_message(log)
+        else:
+            return False
+    log.update(additional_data)
+    _parse_to_json(log)
+    return True
 
 
 def _get_additional_logs_data(aws_logs_data, context):
@@ -108,8 +116,11 @@ def _get_additional_logs_data(aws_logs_data, context):
 
 
 def _is_valid_log(log):
-    if log['message'].startswith('START') or log['message'].startswith('END') or log['message'].startswith('REPORT'):
-        return False
+    try:
+        if log['message'].startswith('START') or log['message'].startswith('END') or log['message'].startswith('REPORT'):
+            return False
+    except Exception as e:
+        pass
     return True
 
 
