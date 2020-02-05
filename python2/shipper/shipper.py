@@ -1,11 +1,12 @@
 import gzip
 import json
 import logging
+import os
 import sys
 import time
-import urllib2
+
 import StringIO
-import os
+import urllib2
 
 # set logger
 logger = logging.getLogger()

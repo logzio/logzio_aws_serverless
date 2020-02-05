@@ -1,8 +1,8 @@
 import base64
+import datetime as dt
 import json
 import logging
 import os
-import datetime as dt
 
 from python2.shipper.shipper import LogzioShipper
 

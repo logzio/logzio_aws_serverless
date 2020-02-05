@@ -1,18 +1,18 @@
 import base64
 import copy
 import gzip
-import httpretty
 import json
 import logging
 import os
 import random
-import python3.kinesis.src.lambda_function as worker
 import string
 import unittest
-import urllib.request
-from logging.config import fileConfig
 from io import BytesIO
+from logging.config import fileConfig
 
+import httpretty
+
+import python3.kinesis.src.lambda_function as worker
 
 # CONST
 RECORD_SIZE = 10
