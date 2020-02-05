@@ -1,10 +1,11 @@
+import base64
 import gzip
 import json
 import logging
 import os
-from python3.shipper.shipper import LogzioShipper
-import base64
 from io import BytesIO
+
+from python3.shipper.shipper import LogzioShipper
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
@@ -12,8 +13,9 @@ LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
               'warning', 'error', 'err', 'critical', 'crit', 'fatal',
               'severe', 'emerg', 'emergency']
 
-python_event_size = 3
-nodejs_event_size = 4
+PYTHON_EVENT_SIZE = 3
+NODEJS_EVENT_SIZE = 4
+LAMBDA_LOG_GROUP = '/aws/lambda/'
 
 
 # set logger
@@ -36,6 +38,7 @@ def _extract_aws_logs_data(event):
 
 
 def _extract_lambda_log_message(log):
+    # type: (dict) -> None
     str_message = str(log['message'])
     try:
         start_level = str_message.index('[')
@@ -47,24 +50,25 @@ def _extract_lambda_log_message(log):
     except ValueError:
         # Let's try without log level
         start_split = 0
-
     message_parts = str_message[start_split:].split('\t')
     size = len(message_parts)
-    if size == python_event_size or size == nodejs_event_size:
+    if size == PYTHON_EVENT_SIZE or size == NODEJS_EVENT_SIZE:
         log['@timestamp'] = message_parts[0]
         log['requestID'] = message_parts[1]
         log['message'] = message_parts[size - 1]
-    if size == nodejs_event_size:
+    if size == NODEJS_EVENT_SIZE:
         log['log_level'] = message_parts[2]
 
 
-def _put_timestamp(log):
+def _add_timestamp(log):
+    # type: (dict) -> None
     if '@timestamp' not in log:
         log['@timestamp'] = str(log['timestamp'])
         del log['timestamp']
 
 
 def _parse_to_json(log):
+    # type: (dict) -> None
     try:
         if os.environ['FORMAT'].lower() == 'json':
             json_object = json.loads(log['message'])
@@ -75,9 +79,9 @@ def _parse_to_json(log):
 
 
 def _parse_cloudwatch_log(log, additional_data):
-    # type: (dict, dict) -> None
-    _put_timestamp(log)
-    if '/aws/lambda/' in additional_data['logGroup']:
+    # type: (dict, dict) -> bool
+    _add_timestamp(log)
+    if LAMBDA_LOG_GROUP in additional_data['logGroup']:
         if _is_valid_log(log):
             _extract_lambda_log_message(log)
         else:
@@ -116,12 +120,10 @@ def _get_additional_logs_data(aws_logs_data, context):
 
 
 def _is_valid_log(log):
-    try:
-        if log['message'].startswith('START') or log['message'].startswith('END') or log['message'].startswith('REPORT'):
-            return False
-    except Exception as e:
-        pass
-    return True
+    # type (dict) -> bool
+    message = log['message']
+    is_info_log = message.startswith('START') or message.startswith('END') or message.startswith('REPORT')
+    return not is_info_log
 
 
 def lambda_handler(event, context):

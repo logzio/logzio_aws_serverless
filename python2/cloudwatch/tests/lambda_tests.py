@@ -1,17 +1,18 @@
 import base64
 import gzip
-import httpretty
 import json
 import logging
 import os
 import random
-from python2 import cloudwatch as worker
 import string
 import unittest
-
 from logging.config import fileConfig
-from python2.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
+
+import httpretty
 from StringIO import StringIO
+
+from python2 import cloudwatch as worker
+from python2.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
 
 # CONST
 BODY_SIZE = 10

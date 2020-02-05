@@ -1,19 +1,19 @@
 import base64
 import copy
 import gzip
-import httpretty
 import json
 import logging
 import os
 import random
-
-import python2.kinesis.src.lambda_function as worker
 import string
 import unittest
-
 from logging.config import fileConfig
-from python2.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
+
+import httpretty
 from StringIO import StringIO
+
+import python2.kinesis.src.lambda_function as worker
+from python2.shipper.shipper import MaxRetriesException, UnauthorizedAccessException, UnknownURL
 
 # CONST
 RECORD_SIZE = 10

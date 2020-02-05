@@ -1,22 +1,21 @@
 import base64
 import gzip
-import httpretty
 import json
 import logging
 import os
 import random
-import python3.cloudwatch.src.lambda_function as worker
 import string
 import unittest
-from logging.config import fileConfig
 from io import BytesIO
-import urllib.request
+from logging.config import fileConfig
+import httpretty
+import python3.cloudwatch.src.lambda_function as worker
 
 # CONST
 BODY_SIZE = 10
 STRING_LEN = 10
-python_event_size = 3
-nodejs_event_size = 4
+PYTHON_EVENT_SIZE = 3
+NODEJS_EVENT_SIZE = 4
 
 fileConfig('logging_config.ini')
 logger = logging.getLogger(__name__)
@@ -92,19 +91,6 @@ class TestLambdaFunction(unittest.TestCase):
         data_body['logGroup'] = 'TestlogGroup'
         return data_body
 
-    @staticmethod
-    # Create aws data json format string
-    def _data_nodejs_body_builder(message_builder, body_size):
-        data_body = {'logStream': 'TestStream', 'messageType': 'DATA_MESSAGE', 'logEvents': []}
-        # Each awslog event contain BODY_SIZE messages
-        for i in range(body_size):
-            log = message_builder()
-            data_body['logEvents'].append(log)
-        data_body['owner'] = 'Test'
-        data_body['subscriptionFilters'] = ['TestFilters']
-        data_body['logGroup'] = 'TestlogGroup'
-        return data_body
-
     # Encrypt and zip the data as awslog format require
     def _generate_aws_logs_event(self, message_builder, body_size=BODY_SIZE):
         event = {'awslogs': {}}
@@ -129,34 +115,38 @@ class TestLambdaFunction(unittest.TestCase):
             for key, value in json_message.items():
                 self.assertEqual(json_body_log[key], value)
 
-    def _validate_aws_event(self, request, original_log, size_of_event):
+    def _validate_cloudwatch_log_event(self, request, uniq_message, event_builder, size_of_event):
+        original_log = event_builder().split('\t')
+        original_log[size_of_event - 1] = uniq_message
         body_logs = json.loads(request.body.decode("utf-8"))
-
         self.assertEqual(body_logs['@timestamp'], original_log[0])
         self.assertEqual(body_logs['requestID'], original_log[1])
+
         if 'log_level' in body_logs:
             self.assertEqual(body_logs['log_level'], original_log[2])
-        message_list = original_log[size_of_event-1].split(",")
+
+        message_list = original_log[size_of_event - 1].split(",")
         original_message_list = body_logs['message'].split(",")
+
         for i in range(len(message_list)):
             self.assertEqual(message_list[i], original_message_list[i])
 
-    def _test_aws_event(self, event_builder, size_of_event):
+    def _test_cloudwatch_format_event(self, event_builder, size_of_event):
         event = {'awslogs': {}}
         data_body = self._data_body_builder(event_builder, 1)
-        uniq_message = data_body['logEvents'][0]['message'].split("\t")[size_of_event-1]
         data_body['logGroup'] = '/aws/lambda/TestlogGroup'
         enc_data = self.gzipData(data_body)
         event['awslogs']['data'] = enc_data
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
+
         try:
             worker.lambda_handler(event, Context)
         except Exception as e:
             self.fail("Failed on handling a legit event. Expected status_code = 200")
+
+        uniq_message = data_body['logEvents'][0]['message'].split("\t")[size_of_event - 1]
         request = httpretty.HTTPretty.last_request
-        original_log = event_builder().split('\t')
-        original_log[size_of_event-1] = uniq_message
-        self._validate_aws_event(request, original_log, size_of_event)
+        self._validate_cloudwatch_log_event(request, uniq_message, event_builder, size_of_event)
 
     @httpretty.activate
     def test_wrong_format_event(self):
@@ -172,17 +162,16 @@ class TestLambdaFunction(unittest.TestCase):
         enc_data = self.gzipData(data_body)
         event['awslogs']['data'] = enc_data
         httpretty.register_uri(httpretty.POST, self._logzioUrl, status=200, content_type="application/json")
-
         with self.assertRaises(Exception):
             worker.lambda_handler(event, Context)
 
     @httpretty.activate
     def test_nodejs_format_event(self):
-        self._test_aws_event(self._json_nodejs_builder, nodejs_event_size)
+        self._test_aws_format_event(self._json_nodejs_builder, NODEJS_EVENT_SIZE)
 
     @httpretty.activate
     def test_python_format_event(self):
-        self._test_aws_event(self._json_python_builder, python_event_size)
+        self._test_aws_format_event(self._json_python_builder, PYTHON_EVENT_SIZE)
 
     @httpretty.activate
     def test_json_type_request(self):

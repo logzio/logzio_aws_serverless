@@ -1,8 +1,8 @@
 import base64
+import datetime as dt
 import json
 import logging
 import os
-import datetime as dt
 
 from python3.shipper.shipper import LogzioShipper
 
@@ -38,7 +38,7 @@ def _get_type(data):
         json_data = json.loads(data)
         return json_data["source"].split('.')[1]
     except (KeyError, ValueError):
-        return "logzio_kinesis_stream"
+        return "kinesis_lambda"
 
 
 def _add_record_kinesis_fields(log, record_kinesis_field):

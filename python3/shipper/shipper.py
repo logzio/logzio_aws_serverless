@@ -1,11 +1,11 @@
 import gzip
+import io
 import json
 import logging
+import os
 import sys
 import time
-import os
 import urllib
-import io
 import urllib.request
 
 # set logger

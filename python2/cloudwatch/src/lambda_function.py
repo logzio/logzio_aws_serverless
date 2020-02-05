@@ -3,8 +3,9 @@ import json
 import logging
 import os
 
-from python2.shipper.shipper import LogzioShipper
 from StringIO import StringIO
+
+from python2.shipper.shipper import LogzioShipper
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
