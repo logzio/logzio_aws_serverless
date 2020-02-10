@@ -12,6 +12,7 @@ import urllib.request
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+KIBANA_MAX_LENGTH = 32000
 
 class MaxRetriesException(Exception):
     pass
@@ -131,6 +132,10 @@ class LogzioShipper(object):
 
     def add(self, log):
         # type (dict) -> None
+        if len(str(log)) >= KIBANA_MAX_LENGTH:
+            logger.warning('Log is not shipped due to invalid log length (%s)' % len(str(log)))
+            return
+
         json_log = json.dumps(log)
         self._logs.write(json_log)
         # To prevent flush() after every log added
