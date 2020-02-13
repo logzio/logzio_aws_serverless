@@ -2,6 +2,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
 Description: "This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP."
+Mappings:
+  LogGroups:
+      App1:
+          LogGroup1: /aws/lambda/ExampleLogGroup1
+          LogGroup2: /aws/lambda/ExampleLogGroup2
+
 Parameters:
   LogzioURL:
     Type: "String"
@@ -44,6 +50,26 @@ Outputs:
       Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
 
 Resources:
+   CloudWatchLambdaPermission: # add permission for cloudwatch to invoke lambda if required
+    Type: AWS::Lambda::Permission
+    DependsOn: LogzioCloudwatchLogsLambda 
+    Properties:
+      FunctionName: logzio-cloudwatch-log-shipper
+      Principal: !Sub "logs.${AWS::Region}.amazonaws.com"
+      Action: "lambda:InvokeFunction"
+      SourceAccount: !Sub "${AWS::AccountId}"
+  LogGroup1: #Example subscription filter for log group1
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !GetAtt LogzioCloudwatchLogsLambda.Arn
+      FilterPattern: ""
+      LogGroupName: !FindInMap [LogGroups, Ref: "App1", "LogGroup1"]
+  LogGroup2: #Example subscription filter for log group2
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn: !GetAtt LogzioCloudwatchLogsLambda.Arn
+      FilterPattern: ""
+      LogGroupName: !FindInMap [LogGroups, Ref: "App1", "LogGroup2"]
   LogzioCloudwatchLogsLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
