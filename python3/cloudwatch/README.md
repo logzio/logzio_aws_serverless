@@ -158,7 +158,17 @@ aws cloudformation deploy
 | LogzioCOMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
 | LogzioENRICH | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`. |
 
-#### 4. Check Logz.io for your logs
+##### 4. Set the CloudWatch Logs event trigger
+
+Find the **Add triggers** list (left side of the Designer panel). Choose **CloudWatch Logs** from this list.
+
+Below the Designer, you'll see the Configure triggers panel. Choose the **Log group** that the Lambda function will watch.
+
+Type a **Filter name** (required) and **Filter pattern** (optional).
+
+Click **Add**, and then click **Save** at the top of the page.
+
+##### 5. Check Logz.io for your logs
 
 Give your logs some time to get from your system to ours, and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
 
