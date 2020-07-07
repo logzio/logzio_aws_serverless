@@ -66,6 +66,24 @@ class TestLambdaFunction(unittest.TestCase):
             })
 
     @staticmethod
+    # Build json containing multiple messages
+    def _json_multiple_messages_builder():
+        return json.dumps({
+            'field1': 'id',
+            'field2': 'host',
+            'messages': [
+                    {
+                        'info': 'first message',
+                        'level': 'low'
+                     },
+                    {
+                        'info': 'second',
+                        'level': 'high'
+                    }
+                ]
+        })
+
+    @staticmethod
     def _random_string_builder():
         s = string.ascii_lowercase + string.digits
         return ''.join(random.sample(s, STRING_LEN))
@@ -78,14 +96,16 @@ class TestLambdaFunction(unittest.TestCase):
             self._dec_data.append(json.loads(dec_data)['message'])
         except ValueError:
             self._dec_data.append(dec_data)
+        except KeyError:
+            pass
 
         kinesis_data = copy.deepcopy(_kinesis_data)
         kinesis_data['data'] = base64.b64encode(dec_data.encode('utf-8'))
         record_body['kinesis'] = kinesis_data
         return record_body
 
-    def _generate_kinesis_event(self, message_builder):
-        return {'Records': [self._kinesis_record_builder(message_builder) for _ in range(RECORD_SIZE)]}
+    def _generate_kinesis_event(self, message_builder, size):
+        return {'Records': [self._kinesis_record_builder(message_builder) for _ in range(size)]}
 
     def _validate_json_data(self, request):
         body_logs_list = request.body.splitlines()
@@ -114,7 +134,7 @@ class TestLambdaFunction(unittest.TestCase):
     @httpretty.activate
     def test_json_type_request(self):
         os.environ['FORMAT'] = "JSON"
-        event = self._generate_kinesis_event(self._json_string_builder)
+        event = self._generate_kinesis_event(self._json_string_builder, RECORD_SIZE)
         httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
                                content_type="application/json")
         try:
@@ -124,6 +144,36 @@ class TestLambdaFunction(unittest.TestCase):
 
         request = httpretty.HTTPretty.last_request
         self._validate_json_data(request)
+
+    @httpretty.activate
+    def test_msgs_array(self):
+        os.environ['MESSAGES_ARRAY'] = "messages"
+        os.environ['FORMAT'] = "JSON"
+        event = self._generate_kinesis_event(self._json_multiple_messages_builder, 1)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            worker.lambda_handler(event, None)
+        except Exception:
+            self.fail("Failed on handling a legit eveSnt. Expected status_code = 200")
+        request = httpretty.HTTPretty.last_request
+        body_logs_list = request.body.splitlines()
+        self.assertEqual(len(body_logs_list), 2)
+
+        first_msg = json.loads(body_logs_list[0])
+        second_msg = json.loads(body_logs_list[1])
+        self.assertEqual(first_msg["level"], "low")
+        self.assertEqual(first_msg["info"], "first message")
+        self.assertEqual(second_msg["level"], "high")
+        self.assertEqual(second_msg["info"], "second")
+
+        # Check the metadata is the same
+        for key in first_msg:
+            if key != "level" and key != "info":
+                self.assertEqual(first_msg[key], second_msg[key])
+
+
+
 
     @httpretty.activate
     def test_wrong_event(self):
