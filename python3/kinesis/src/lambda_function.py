@@ -3,6 +3,7 @@ import datetime as dt
 import json
 import logging
 import os
+import copy
 
 from python3.shipper.shipper import LogzioShipper
 
@@ -78,10 +79,21 @@ def _parse_kinesis_record(record):
     return log
 
 
+def split_by_fields(log, field):
+    logs = []
+    for msg in log[field]:
+        temp_log = copy.deepcopy(log)
+        temp_log.update(msg)
+        temp_log.pop(field)
+        logs.append(temp_log)
+    return logs
+
+
 def lambda_handler(event, context):
     # type: (dict, 'LambdaContext') -> None
-
     logger.info("Received {} raw Kinesis records.".format(len(event["Records"])))
+    multiple_msgs = os.environ.get('MESSAGES_ARRAY')
+
     try:
         logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
     except KeyError as e:
@@ -91,10 +103,15 @@ def lambda_handler(event, context):
     shipper = LogzioShipper(logzio_url)
     for record in event['Records']:
         log = _parse_kinesis_record(record)
-        try:
-            log["message"] = log["message"].decode("utf-8")
-        except (AttributeError, KeyError):
-            pass
-        shipper.add(log)
+        if multiple_msgs:
+            logs = split_by_fields(log, multiple_msgs)
+        else:
+            try:
+                log["message"] = log["message"].decode("utf-8")
+            except (AttributeError, KeyError):
+                pass
+            logs = [log]
+        for log in logs:
+            shipper.add(log)
 
     shipper.flush()
