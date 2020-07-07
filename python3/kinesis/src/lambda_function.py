@@ -103,7 +103,7 @@ def lambda_handler(event, context):
     shipper = LogzioShipper(logzio_url)
     for record in event['Records']:
         log = _parse_kinesis_record(record)
-        if multiple_msgs:
+        if multiple_msgs and multiple_msgs in log:
             logs = split_by_fields(log, multiple_msgs)
         else:
             try:

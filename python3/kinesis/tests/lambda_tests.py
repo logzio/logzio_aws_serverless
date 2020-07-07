@@ -172,9 +172,6 @@ class TestLambdaFunction(unittest.TestCase):
             if key != "level" and key != "info":
                 self.assertEqual(first_msg[key], second_msg[key])
 
-
-
-
     @httpretty.activate
     def test_wrong_event(self):
         event = {'awslogs': {}}
