@@ -63,6 +63,7 @@ In the _Environment variables_ section, set your Logz.io account token, URL, and
 | TYPE (Default: `kinesis_lambda`) | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
 | FORMAT (Default: `text`) | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
 | COMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
+| MESSAGES_ARRAY | Set this ENV variable to split the a record into multiple logs based on a field containing an array of messages. For more information see [parse array of JSON objects into multiple logs](). | 
 
 #### 4. Configure the function's basic settings
 
