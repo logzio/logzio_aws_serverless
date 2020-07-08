@@ -59,7 +59,8 @@ In the _Environment variables_ section, set your Logz.io account token, URL, and
 | Parameter | Description |
 |---|---|
 | TOKEN (Required) | The [token](https://app.logz.io/#/dashboard/settings/general) of the account you want to ship to. |
-| URL (Required) | Protocol, listener host, and port (for example, `https://<<LISTENER-HOST>>:8071`). <br > Replace `<<LISTENER-HOST>>` with your region's listener host (for example, `listener.logz.io`). For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). <!-- logzio-inject:listener-url --> |
+| REGION | Two-letter region code, or blank for US East (Northern Virginia). This determnies your listener URL (where you're shipping the logs to) and API URL. <br> You can find your region code in the [Regions and URLs](https://docs.logz.io/user-guide/accounts/account-region.html#regions-and-urls) table. |
+| URL (Deprecated) | Protocol, listener host, and port (for example, `https://<<LISTENER-HOST>>:8071`). <br > Replace `<<LISTENER-HOST>>` with your region's listener host (for example, `listener.logz.io`). For more information on finding your account's region, see [Account region](https://docs.logz.io/user-guide/accounts/account-region.html). <!-- logzio-inject:listener-url --> Deprecated. Use REGION instead|
 | TYPE (Default: `kinesis_lambda`) | The log type you'll use with this Lambda. This can be a [built-in log type](https://docs.logz.io/user-guide/log-shipping/built-in-log-types.html), or a custom log type. <br> You should create a new Lambda for each log type you use. |
 | FORMAT (Default: `text`) | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
 | COMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
