@@ -32,10 +32,9 @@ class TestLambdaFunction(unittest.TestCase):
 
     def setUp(self):
         # Set os.environ for tests
-        os.environ['URL'] = "https://listener.logz.io:8071"
         os.environ['TOKEN'] = "123456789"
         os.environ['TYPE'] = "vpcflow"
-        self._logzioUrl = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
+        self._logzioUrl = "https://listener.logz.io:8071/?token={}".format(os.environ['TOKEN'])
 
     def tearDown(self):
         if os.environ.get('FORMAT'):

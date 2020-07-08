@@ -10,6 +10,7 @@ from python3.shipper.shipper import LogzioShipper
 # set logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+MESSAGES_ARRAY_ENV = 'MESSAGES_ARRAY'
 
 
 def _extract_record_data(data):
@@ -88,19 +89,12 @@ def split_by_fields(log, field):
         logs.append(temp_log)
     return logs
 
-
 def lambda_handler(event, context):
     # type: (dict, 'LambdaContext') -> None
     logger.info("Received {} raw Kinesis records.".format(len(event["Records"])))
-    multiple_msgs = os.environ.get('MESSAGES_ARRAY')
+    multiple_msgs = os.environ.get(MESSAGES_ARRAY_ENV)
 
-    try:
-        logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
-    except KeyError as e:
-        logger.error("Missing one of the environment variable: {}".format(e))
-        raise
-
-    shipper = LogzioShipper(logzio_url)
+    shipper = LogzioShipper()
     for record in event['Records']:
         log = _parse_kinesis_record(record)
         if multiple_msgs and multiple_msgs in log:

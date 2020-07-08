@@ -128,14 +128,10 @@ def _is_valid_log(log):
 
 def lambda_handler(event, context):
     # type (dict, 'LambdaContext') -> None
-    try:
-        logzio_url = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
-    except KeyError as e:
-        logger.error("Missing one of the environment variable: {}".format(e))
-        raise
+
     aws_logs_data = _extract_aws_logs_data(event)
     additional_data = _get_additional_logs_data(aws_logs_data, context)
-    shipper = LogzioShipper(logzio_url)
+    shipper = LogzioShipper()
 
     logger.info("About to send {} logs".format(len(aws_logs_data['logEvents'])))
     for log in aws_logs_data['logEvents']:
