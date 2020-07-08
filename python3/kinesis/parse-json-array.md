@@ -70,4 +70,6 @@ Notice all the metadata is the same for all the logs except for the `info` field
 ### How to enable multiple logs parsing
 
 All you need to do to enable this feature is to set the environment variable `MESSAGES_ARRAY` to point to the field containing the JSON array.
-For the example above, we will set the ENV variable `MESSAGES_ARRAY` value to `messages`
+For the example above, we will set the ENV variable `MESSAGES_ARRAY` value to `messages`.
+
+**Note**: This option would work only if you set `FORMAT` to `json`.
