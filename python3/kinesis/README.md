@@ -119,12 +119,12 @@ Deploy the CloudFormation package using AWS CLI.
 For a complete list of options, see the configuration parameters below the code block. 👇
 
 ```shell
-aws cloudformation deploy
---template-file $(pwd)/kinesis-template.output.yaml
---stack-name logzio-kinesis-logs-lambda-stack
---parameter-overrides
-  LogzioTOKEN='<<SHIPPING-TOKEN>>'
-  KinesisStream='<<KINESIS-STREAM-NAME>>'
+aws cloudformation deploy \
+--template-file $(pwd)/kinesis-template.output.yaml \
+--stack-name logzio-kinesis-logs-lambda-stack \
+--parameter-overrides \
+  LogzioTOKEN='<<SHIPPING-TOKEN>>' \
+  KinesisStream='<<KINESIS-STREAM-NAME>>' \
 --capabilities "CAPABILITY_IAM"
 ```
 
