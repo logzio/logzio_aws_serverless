@@ -1,7 +1,6 @@
 # Parse JSON array into multiple logs
 
-One of the features of our Kinesis lambda function is to parse an array of JSON objects into discrete events to Logz.io.
-That way, ElasticSearch plays nicer with these logs.
+One of the features of our Kinesis lambda function is that it parses an array of JSON objects into discrete events.  That way, ElasticSearch plays nicer with these logs and they will be fully parsed and mapped by Logz.io.
 
 ##### For Example:
 For the following record:
