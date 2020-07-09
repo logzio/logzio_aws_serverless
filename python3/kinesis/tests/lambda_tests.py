@@ -77,7 +77,7 @@ class TestLambdaFunction(unittest.TestCase):
                         'level': 'low'
                      },
                     {
-                        'info': 'second',
+                        'info': 'second message',
                         'level': 'high'
                     }
                 ]
