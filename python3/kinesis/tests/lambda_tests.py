@@ -165,7 +165,7 @@ class TestLambdaFunction(unittest.TestCase):
         self.assertEqual(first_msg["level"], "low")
         self.assertEqual(first_msg["info"], "first message")
         self.assertEqual(second_msg["level"], "high")
-        self.assertEqual(second_msg["info"], "second")
+        self.assertEqual(second_msg["info"], "second message")
 
         # Check the metadata is the same
         for key in first_msg:
