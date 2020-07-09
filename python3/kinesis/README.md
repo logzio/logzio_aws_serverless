@@ -29,21 +29,9 @@ Click **Create Function** (bottom right corner of the page). After a few moments
 
 You'll need this page later on, so keep it open.
 
-#### 2. Zip the source files
+#### 2. Download the Kinesis stream shipper
 
-Clone the Kinesis Stream Shipper - Lambda project from GitHub to your computer,
-and zip the Python files in the `src/` folder.
-
-```shell
-git clone https://github.com/logzio/logzio_aws_serverless.git \
-&& cd logzio_aws_serverless/python3/kinesis/ \
-&& mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper \
-&& cp src/lambda_function.py dist \
-&& cd dist/ \
-&& zip logzio-kinesis lambda_function.py python3/shipper/*
-```
-
-You'll upload `logzio-kinesis.zip` in the next step.
+Download our latest Kinesis stream shipper zip file from the [releases page](https://github.com/logzio/logzio_aws_serverless/releases).
 
 #### 3. Upload the zip file and set environment variables
 
@@ -107,19 +95,9 @@ an S3 bucket to store the CloudFormation package
 
 <div class="tasklist">
 
-#### 1. Zip the source files
+#### 1. Download the Kinesis stream shipper
 
-Clone the Kinesis Stream Shipper - Lambda project from GitHub to your computer,
-and zip the Python files in the `src/` folder.
-
-```shell
-git clone https://github.com/logzio/logzio_aws_serverless.git \
-&& cd logzio_aws_serverless/python3/kinesis/ \
-&& mkdir -p dist/python3/shipper; cp -r ../shipper/shipper.py dist/python3/shipper \
-&& cp src/lambda_function.py dist \
-&& cd dist/ \
-&& zip logzio-kinesis lambda_function.py python3/shipper/*
-```
+Download our latest Kinesis stream shipper zip file from the [releases page](https://github.com/logzio/logzio_aws_serverless/releases).
 
 #### 2. Create the CloudFormation package and upload to S3
 
