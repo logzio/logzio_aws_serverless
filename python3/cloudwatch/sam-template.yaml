@@ -5,10 +5,15 @@ Description: "This is an AWS Lambda function that collects CloudWatch logs and s
 Parameters:
   LogzioURL:
     Type: "String"
-    Description: "Logz.io listener URL.
-    If you are in the EU region insert 'https://listener-eu.logz.io:8071'.
-    Otherwise, use 'https://listener.logz.io:8071'"
-    Default: "https://listener.logz.io:8071"
+    Description: "Deprecated. Use LogzioREGION instead"
+    Default: ""
+
+  LogzioREGION:
+    Type: "String"
+    Description: "Two-letter region code, or blank for US East (Northern Virginia). This determines your listener URL
+    (where you're shipping the logs to) and API URL. You can find your region code in the Regions and URLs at
+    https://docs.logz.io/user-guide/accounts/account-region.html#regions-and-urls table"
+    Default: "us"
 
   LogzioTOKEN:
     Type: "String"
@@ -55,6 +60,7 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
+          REGION: !Ref LogzioREGION
           URL: !Ref LogzioURL
           TOKEN: !Ref LogzioTOKEN
           TYPE: !Ref LogzioTYPE
