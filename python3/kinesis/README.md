@@ -105,8 +105,8 @@ Create the CloudFormation package using the AWS CLI.
 Replace `<<YOUR-S3-BUCKET>>` with the S3 bucket name where you'll be uploading this package.
 
 ```shell
-cd ../ \
-&& aws cloudformation package \
+curl -o sam-template.yaml https://raw.githubusercontent.com/logzio/logzio_aws_serverless/master/python3/kinesis/sam-template.yaml
+aws cloudformation package \
   --template sam-template.yaml \
   --output-template-file kinesis-template.output.yaml \
   --s3-bucket <<YOUR-S3-BUCKET>>
