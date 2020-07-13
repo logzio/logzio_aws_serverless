@@ -32,10 +32,9 @@ class TestLambdaFunction(unittest.TestCase):
 
     def setUp(self):
         # Set os.environ for tests
-        os.environ['URL'] = "https://listener.logz.io:8071"
         os.environ['TOKEN'] = "123456789"
         os.environ['TYPE'] = "vpcflow"
-        self._logzioUrl = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
+        self._logzioUrl = "https://listener.logz.io:8071/?token={}".format(os.environ['TOKEN'])
 
     def tearDown(self):
         if os.environ.get('FORMAT'):
@@ -167,11 +166,11 @@ class TestLambdaFunction(unittest.TestCase):
 
     @httpretty.activate
     def test_nodejs_format_event(self):
-        self._test_aws_format_event(self._json_nodejs_builder, NODEJS_EVENT_SIZE)
+        self._test_cloudwatch_format_event(self._json_nodejs_builder, NODEJS_EVENT_SIZE)
 
     @httpretty.activate
     def test_python_format_event(self):
-        self._test_aws_format_event(self._json_python_builder, PYTHON_EVENT_SIZE)
+        self._test_cloudwatch_format_event(self._json_python_builder, PYTHON_EVENT_SIZE)
 
     @httpretty.activate
     def test_json_type_request(self):

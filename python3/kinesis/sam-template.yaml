@@ -1,18 +1,23 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
-Description: "This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP."
+Description: "This is an AWS Lambda function that collects Kinesis and sends them to Logz.io in bulk, over HTTP."
 Parameters:
   LogzioURL:
     Type: "String"
-    Description: "Logz.io listener URL.
-    If you are in the EU region insert 'https://listener-eu.logz.io:8071'.
-    Otherwise, use 'https://listener.logz.io:8071'"
-    Default: "https://listener.logz.io:8071"
+    Description: "Deprecated. Use LogzioREGION instead"
+    Default: ""
+
+  LogzioREGION:
+    Type: "String"
+    Description: "Two-letter region code, or blank for US East (Northern Virginia). This determines your listener URL
+    (where you're shipping the logs to) and API URL. You can find your region code in the Regions and URLs at
+    https://docs.logz.io/user-guide/accounts/account-region.html#regions-and-urls table"
+    Default: "us"
 
   LogzioTOKEN:
     Type: "String"
-    Description: "Logz.io account token."
+    Description: "The token of the account you want to ship to. Can be found at https://app.logz.io/#/dashboard/settings/general"
 
   LogzioTYPE:
     Type: "String"
@@ -33,6 +38,13 @@ Parameters:
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
     Default: "false"
 
+  LogzioMessagesArray:
+    Type: "String"
+    Description: "Set this ENV variable to split the a record into multiple logs based on a field containing an array
+    of messages. For more information see https://github.com/logzio/logzio_aws_serverless/blob/master/python3/kinesis/parse-json-array.md.
+    Note: This option would work only if you set FORMAT to json."
+    Default: ""
+
   KinesisStream:
       Type: "String"
       Description: "Enter a Kinesis stream to listen for updates on."
@@ -49,17 +61,17 @@ Parameters:
     Default: "LATEST"
 
 Outputs:
-    LogzioCloudwatchLogsLambda:
-      Description: "Logz.io CW logs lambda ARN"
-      Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
+    LogzioKinesisLambda:
+      Description: "Logz.io Kinesis lambda ARN"
+      Value: !GetAtt LogzioKinesisLambda.Arn
 
 Resources:
-  LogzioCloudwatchLogsLambda:
+  LogzioKinesisLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
       Runtime: python3.7
       Handler: lambda_function.lambda_handler
-      CodeUri: ./dist/logzio-kinesis.zip
+      CodeUri: ./logzio-kinesis-0.0.2.zip
       FunctionName: logzio-kinesis-stream-shipper
       MemorySize: 512
       Timeout: 60
@@ -73,7 +85,9 @@ Resources:
       Environment:
         Variables:
           URL: !Ref LogzioURL
+          REGION: !Ref LogzioREGION
           TOKEN: !Ref LogzioTOKEN
           TYPE: !Ref LogzioTYPE
           FORMAT: !Ref LogzioFORMAT
           COMPRESS: !Ref LogzioCOMPRESS
+          MESSAGES_ARRAY: !Ref LogzioMessagesArray

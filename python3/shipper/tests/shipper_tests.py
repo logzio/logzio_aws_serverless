@@ -13,10 +13,9 @@ from io import BytesIO
 class TestLambdaFunction(unittest.TestCase):
     def setUp(self):
         # Set os.environ for tests
-        os.environ['URL'] = "https://listener.logz.io:8071"
         os.environ['TOKEN'] = "12345678"
         os.environ['TYPE'] = "test_log"
-        self._logzioUrl = "{0}/?token={1}".format(os.environ['URL'], os.environ['TOKEN'])
+        self._logzioUrl = "https://listener.logz.io:8071/?token={}".format(os.environ['TOKEN'])
         self._dec_data = []
 
     @staticmethod
@@ -30,7 +29,7 @@ class TestLambdaFunction(unittest.TestCase):
         return logs
 
     def ship_logs(self, logs):
-        shipper = LogzioShipper(self._logzioUrl)
+        shipper = LogzioShipper()
         for log in logs:
             shipper.add(log)
         shipper.flush()
