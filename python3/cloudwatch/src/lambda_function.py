@@ -93,9 +93,24 @@ def _parse_cloudwatch_log(log, additional_data):
             _extract_lambda_log_message(log)
         else:
             return False
-    log.update(additional_data)
-    _parse_to_json(log)
-    return True
+    if not(_filter_out_by_log_stream_name(additional_data)):
+        log.update(additional_data)
+        _parse_to_json(log)
+        return True
+    else:
+        return False
+
+
+def _filter_out_by_log_stream_name(additional_data):
+    try:
+        if os.environ['STREAM_NAME']:
+            stream_to_be_filter_out = os.environ['STREAM_NAME'].split(";")
+            if additional_data['logStream'].startswith(tuple(stream_to_be_filter_out)):
+                return True
+            else:
+                return False
+    except KeyError as e:
+        return False
 
 
 def _get_additional_logs_data(aws_logs_data, context):
