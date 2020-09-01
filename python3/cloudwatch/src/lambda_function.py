@@ -105,10 +105,7 @@ def _filter_out_by_log_stream_name(additional_data):
     try:
         if os.environ['STREAM_NAME']:
             stream_to_be_filter_out = os.environ['STREAM_NAME'].split(";")
-            if additional_data['logStream'].startswith(tuple(stream_to_be_filter_out)):
-                return True
-            else:
-                return False
+            additional_data['logStream'].startswith(tuple(stream_to_be_filter_out))
     except KeyError as e:
         return False
 
