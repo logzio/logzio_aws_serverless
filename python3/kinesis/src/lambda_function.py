@@ -4,6 +4,8 @@ import json
 import logging
 import os
 import copy
+import gzip
+import binascii
 
 from python3.shipper.shipper import LogzioShipper
 
@@ -18,7 +20,12 @@ def _extract_record_data(data):
     # The decoded string is returned. A TypeError is raised if s is
     # incorrectly padded
     try:
-        return base64.b64decode(data)
+        # decompress the payload if it looks gzippy
+        decoded = base64.b64decode(data)
+        if binascii.hexlify(decoded[0:2]) == b'1f8b':
+            return gzip.decompress(decoded)
+        else:
+            return decoded
     except TypeError as e:
         logger.error("Fail to decode record data: {}".format(str(e)))
         raise
