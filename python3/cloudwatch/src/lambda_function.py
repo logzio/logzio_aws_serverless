@@ -46,7 +46,9 @@ def _extract_lambda_log_message(log):
         log_level = str_message[start_level + 1:end_level]
         if log_level.lower() in LOG_LEVELS:
             log['log_level'] = log_level
-        start_split = end_level + 2
+            start_split = end_level + 2
+        else:
+            start_split = 0
     except ValueError:
         # Let's try without log level
         start_split = 0
