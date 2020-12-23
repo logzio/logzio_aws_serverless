@@ -74,6 +74,22 @@ In Basic settings, we recommend starting with these settings:
 These default settings are just a starting point.
 Check your Lambda usage regularly, and adjust these values if you need to.
 
+##### Default settings
+
+By default, we do not send logs of type START, END, REPORT.  
+If you prefer to send all log types, replace the method ‘_parse_cloudwatch_log’ in the lambda function to:
+
+```py
+def _parse_cloudwatch_log(log, additional_data):
+    # type: (dict, dict) -> bool
+    _add_timestamp(log)
+    if LAMBDA_LOG_GROUP in additional_data['logGroup']:
+        _extract_lambda_log_message(log)
+    log.update(additional_data)
+    _parse_to_json(log)
+    return True
+```
+
 #### 5. Set the CloudWatch Logs event trigger
 
 Find the **Add triggers** list (left side of the Designer panel). Choose **CloudWatch Logs** from this list.
@@ -158,6 +174,22 @@ aws cloudformation deploy \
 | LogzioFORMAT (Default: `text`) | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields. |
 | LogzioCOMPRESS (Default: `false`) | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs. |
 | LogzioENRICH | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`. |
+
+##### Default settings
+
+By default, we do not send logs of type START, END, REPORT.  
+If you prefer to send all log types, replace the method ‘_parse_cloudwatch_log’ in the lambda function to:
+
+```py
+def _parse_cloudwatch_log(log, additional_data):
+    # type: (dict, dict) -> bool
+    _add_timestamp(log)
+    if LAMBDA_LOG_GROUP in additional_data['logGroup']:
+        _extract_lambda_log_message(log)
+    log.update(additional_data)
+    _parse_to_json(log)
+    return True
+```
 
 #### 4. Check Logz.io for your logs
 
