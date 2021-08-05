@@ -83,11 +83,12 @@ def _parse_to_json(log):
 def _parse_cloudwatch_log(log, additional_data):
     # type: (dict, dict) -> bool
     _add_timestamp(log)
-    if LAMBDA_LOG_GROUP in additional_data['logGroup']:
+    if LAMBDA_LOG_GROUP in additional_data['service']:
         if _is_valid_log(log):
             _extract_lambda_log_message(log)
         else:
             return False
+    del log['id']
     log.update(additional_data)
     _parse_to_json(log)
     return True
@@ -95,14 +96,7 @@ def _parse_cloudwatch_log(log, additional_data):
 
 def _get_additional_logs_data(aws_logs_data, context):
     # type: (dict, 'LambdaContext') -> dict
-    additional_fields = ['logGroup', 'logStream', 'messageType', 'owner']
-    additional_data = dict((key, aws_logs_data[key]) for key in additional_fields)
-    try:
-        additional_data['function_version'] = context.function_version
-        additional_data['invoked_function_arn'] = context.invoked_function_arn
-    except KeyError:
-        logger.info('Failed to find context value. Continue without adding it to the log')
-
+    additional_data = {'service': aws_logs_data['logGroup']}
     try:
         # If ENRICH has value, add the properties
         if os.environ['ENRICH']:

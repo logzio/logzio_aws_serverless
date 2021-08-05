@@ -1,6 +1,6 @@
-#  AWS Serverless Shipper - Lambda
+#  AWS Serverless Shipper - Lambda - Beekeeper Version
 
-This is an AWS Lambda function that ships logs from AWS services to Logz.io.
+This is an AWS Lambda function that ships logs from AWS services to Logz.io, customized for Beekeeper.
 
 **Note**:
 This project contains code for Python 2 and Python 3.
