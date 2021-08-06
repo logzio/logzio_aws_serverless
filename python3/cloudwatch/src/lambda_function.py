@@ -3,6 +3,7 @@ import gzip
 import json
 import logging
 import os
+import re
 from io import BytesIO
 
 from python3.shipper.shipper import LogzioShipper
@@ -16,6 +17,12 @@ LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
 PYTHON_EVENT_SIZE = 3
 NODEJS_EVENT_SIZE = 4
 LAMBDA_LOG_GROUP = '/aws/lambda/'
+
+# comprehensive pattern to match IPv4 and IPv6 addresses
+IP_PATTERN = re.compile(
+    '(?<![:.\w])(?:(?:[0-9]{1,3}\.){3}[0-9]{1,3}|(?:[0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(?::[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(?:ffff(?::0{1,4}){0,1}:){0,1}(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])|(?:[0-9a-fA-F]{1,4}:){1,4}:(?:(?:25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?![:.\w])',
+    re.IGNORECASE
+)
 
 
 # set logger
@@ -80,9 +87,25 @@ def _parse_to_json(log):
         pass
 
 
+def _anonymize_ip_addresses(log):
+    # type: (dict) -> None
+    msg = str(log['message'])
+
+    last_end = 0
+    new_msg = ""
+    matches = IP_PATTERN.finditer(msg)
+    for match in matches:
+        new_msg = new_msg + msg[last_end:match.start()]
+        new_msg = new_msg + 'IP(' + str(hash(match.group())) + ')'
+        last_end = match.end()
+    new_msg = new_msg + msg[last_end:]
+    log['message'] = new_msg
+
+
 def _parse_cloudwatch_log(log, additional_data):
     # type: (dict, dict) -> bool
     _add_timestamp(log)
+    _anonymize_ip_addresses(log)
     if LAMBDA_LOG_GROUP in additional_data['service']:
         if _is_valid_log(log):
             _extract_lambda_log_message(log)
