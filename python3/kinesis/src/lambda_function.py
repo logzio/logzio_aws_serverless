@@ -109,6 +109,9 @@ def lambda_handler(event, context):
         else:
             try:
                 log["message"] = log["message"].decode("utf-8")
+            except UnicodeDecodeError:
+                data = gzip.decompress(log["message"])
+                log["message"] = data.decode('utf-8')
             except (AttributeError, KeyError):
                 pass
             logs = [log]
