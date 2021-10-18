@@ -3,7 +3,7 @@ Description: "This is an AWS Lambda function that collects CloudWatch logs and s
 Parameters:
   LogzioListenerUrl:
     Type: "String"
-    Description: "The Logz.io listener URL fot your region." 
+    Description: "The Logz.io listener URL for your region. You can find explanations here: https://docs.logz.io/user-guide/accounts/account-region.html" 
     Default: ""
 
   LogzioToken:
