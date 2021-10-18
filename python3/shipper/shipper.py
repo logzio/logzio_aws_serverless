@@ -121,20 +121,22 @@ class StringLogRequest(object):
 class LogzioShipper(object):
     MAX_BULK_SIZE_IN_BYTES = 3 * 1024 * 1024
     ACCOUNT_TOKEN_ENV = 'TOKEN'
-    # REGION_ENV = 'REGION'
+    REGION_ENV = 'REGION'
     URL_ENV = 'LISTENER_URL'
     BASE_URL = "https://listener.logz.io:8071"
-    # region = None
+    region = None
 
     def __init__(self):
         self._logzio_url = self.BASE_URL
 
         if os.environ.get(self.URL_ENV):
             self._logzio_url = os.environ.get(self.URL_ENV)
-            # Debprecated
-        # if os.environ.get(self.REGION_ENV):
-        #     self.region = os.environ.get(self.REGION_ENV)
-        #     self._logzio_url = self.get_base_api_url()
+            logger.warning(
+                "Environment variable URL is deprecated and will not be supported in the future. Use REGION instead")
+
+        if os.environ.get(self.REGION_ENV):
+            self.region = os.environ.get(self.REGION_ENV)
+            self._logzio_url = self.get_base_api_url()
         try:
             self._logzio_url = "{0}/?token={1}".format(
                 self._logzio_url, os.environ[self.ACCOUNT_TOKEN_ENV])
@@ -149,14 +151,14 @@ class LogzioShipper(object):
         self._logs = GzipLogRequest(self.MAX_BULK_SIZE_IN_BYTES) \
             if self._compress \
             else StringLogRequest(self.MAX_BULK_SIZE_IN_BYTES)
-        # Debrecated
-    # def get_base_api_url(self):
-    #     return self.BASE_URL.replace("listener.", "listener{}.".format(self.get_region_code()))
 
-    # def get_region_code(self):
-    #     if self.region != "us" and self.region != "":
-    #         return "-{}".format(self.region)
-    #     return ""
+    def get_base_api_url(self):
+        return self.BASE_URL.replace("listener.", "listener{}.".format(self.get_region_code()))
+
+    def get_region_code(self):
+        if self.region != "us" and self.region != "":
+            return "-{}".format(self.region)
+        return ""
 
     def add(self, log):
         # type (dict) -> None
