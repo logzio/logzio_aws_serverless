@@ -17,7 +17,6 @@ This is an AWS Lambda function that collects CloudWatch logs and sends them to L
 2. Choose **Author from scratch**.
 3. In **Name**, add the log type to the name of the function.
 4. In **Runtime**, choose **Python 3.7**.
-5. Click **Create new role from template(s)** and select **Basic Edge Lambda permissions** from the **Policy Templates** list.
 4. Click **Create Function**. 
   
 After a few moments, you'll see configuration options for your Lambda function. You'll need this page later on, so keep it open.
@@ -38,10 +37,13 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 
 #### 3. Upload the zip file and set environment variables
 
-1. In the _Function_ code section of Lambda, find the **Code entry type** list.  
-2. Choose **Upload a .ZIP file** from this list.
+1. In the **Code source** section, select **Upload from > .zip file**.
 3. Click **Upload**, and choose the zip file you created earlier (`logzio-cloudwatch.zip`).
-4. In the _Environment variables_ section, set the variables as per the table below.
+4. Click **Save**.
+5. Navigate to **Configuration > Environment variables**.
+6. Click **Edit**.
+7. Click **Add environment variable**.
+8. Fill in the **Key** and **Value** fields for each variable as per the table below:
 
 | Parameter                                  | Description                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -53,18 +55,8 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 | SENDALL (Default: `false`)                 | By default, we do not send logs of type START, END, REPORT. Change to `true` to send all log data                                                                                                                                                                                                                                              |
 | ENRICH                                     | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`.                                                                                                                                                                                                                                                       |
 
-#### 4. Configure the function's basic settings
 
-In Basic settings, we recommend starting with these settings:
-
-- **Memory**: 512 MB
-- **Timeout**: 1 min 0 sec
-
-**Note**:
-These default settings are just a starting point.
-Check your Lambda usage regularly, and adjust these values if you need to.
-
-#### 5. Set the CloudWatch Logs event trigger
+#### 4. Set the CloudWatch Logs event trigger
 
 1. Find the **Add triggers** list (left side of the Designer panel) and choose **CloudWatch Logs** from this list.
 2. Below the Designer, you'll see the Configure triggers panel. Choose the **Log group** that the Lambda function will watch.
