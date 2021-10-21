@@ -41,7 +41,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 1. In the _Function_ code section of Lambda, find the **Code entry type** list.  
 2. Choose **Upload a .ZIP file** from this list.
 3. Click **Upload**, and choose the zip file you created earlier (`logzio-cloudwatch.zip`).
-4,. In the _Environment variables_ section, set the variables as per the table below.
+4. In the _Environment variables_ section, set the variables as per the table below.
 
 | Parameter                                  | Description                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -118,20 +118,19 @@ In the **Specify stack details** screen, specify the parameters as per the table
 | LogzioCompress (Default: `false`)              | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs.                                                                                                                                           |
 | LogzioEnrich                                   | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`.                                                                                                                                                |
 
-**Note:** You can find \*LogGroup in the title of the  CloudWatch page for the log group that you want to export toLogz.io.
+**Note:** You can find \*LogGroup in the title of the  CloudWatch page for the log group that you want to export to Logz.io as shown below:
+![Screen_3](img/screen-helper.png)
   
   
 When all the parameters have been assigned, click **Next**.
   
 #### 3. Define tags
 
-![Screen_3](img/screen-helper.png)
-
 In the **Configure stack options** screen, assign tags to this function to easily identify your resources and click **Next**.
+![Screen_3](img/screen-2.png)
   
 #### 4. Confirm and create the stack.
 
-![Screen_3](img/screen-2.png)
 
 In the final screen, AWS will automatically show a notice requesting you to acknowledge that AWS CloudFormation might create IAM resources. Check the box and click **Create Stack**.
 
