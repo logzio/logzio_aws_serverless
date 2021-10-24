@@ -96,12 +96,14 @@ def _parse_cloudwatch_log(log, additional_data):
 def _get_additional_logs_data(aws_logs_data, context):
     # type: (dict, 'LambdaContext') -> dict
     additional_fields = ['logGroup', 'logStream', 'messageType', 'owner']
-    additional_data = dict((key, aws_logs_data[key]) for key in additional_fields)
+    additional_data = dict(
+        (key, aws_logs_data[key]) for key in additional_fields)
     try:
         additional_data['function_version'] = context.function_version
         additional_data['invoked_function_arn'] = context.invoked_function_arn
     except KeyError:
-        logger.info('Failed to find context value. Continue without adding it to the log')
+        logger.info(
+            'Failed to find context value. Continue without adding it to the log')
 
     try:
         # If ENRICH has value, add the properties
@@ -109,7 +111,8 @@ def _get_additional_logs_data(aws_logs_data, context):
             properties_to_enrich = os.environ['ENRICH'].split(";")
             for property_to_enrich in properties_to_enrich:
                 property_key_value = property_to_enrich.split("=")
-                additional_data[property_key_value[KEY_INDEX]] = property_key_value[VALUE_INDEX]
+                additional_data[property_key_value[KEY_INDEX]
+                                ] = property_key_value[VALUE_INDEX]
     except KeyError:
         pass
 
@@ -124,7 +127,8 @@ def _get_additional_logs_data(aws_logs_data, context):
 def _is_valid_log(log):
     # type (dict) -> bool
     message = log['message']
-    is_info_log = message.startswith('START') or message.startswith('END') or message.startswith('REPORT')
+    is_info_log = message.startswith('START') or message.startswith(
+        'END') or message.startswith('REPORT')
     return not is_info_log
 
 
@@ -135,10 +139,12 @@ def lambda_handler(event, context):
     additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper()
 
-    logger.info("About to send {} logs".format(len(aws_logs_data['logEvents'])))
+    logger.info("About to send {} logs".format(
+        len(aws_logs_data['logEvents'])))
     for log in aws_logs_data['logEvents']:
         if not isinstance(log, dict):
-            raise TypeError("Expected log inside logEvents to be a dict but found another type")
+            raise TypeError(
+                "Expected log inside logEvents to be a dict but found another type")
         if _parse_cloudwatch_log(log, additional_data):
             shipper.add(log)
 

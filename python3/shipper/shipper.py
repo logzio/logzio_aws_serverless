@@ -37,7 +37,8 @@ class GzipLogRequest(object):
         self._logs_counter = 0
         self._logs = io.BytesIO()
         self._writer = gzip.GzipFile(mode='wb', fileobj=self._logs)
-        self._http_headers = {"Content-Encoding": "gzip", "Content-type": "application/json"}
+        self._http_headers = {"Content-Encoding": "gzip",
+                              "Content-type": "application/json"}
 
     def __len__(self):
         return self._logs_counter
@@ -46,8 +47,9 @@ class GzipLogRequest(object):
         return bytes(self._logs.getvalue())
 
     def write(self, log):
-         self._writer.write(bytes("\n" + log, 'utf-8')) if self._logs_counter else self._writer.write(bytes(log, 'utf-8'))
-         self._logs_counter += 1
+        self._writer.write(bytes(
+            "\n" + log, 'utf-8')) if self._logs_counter else self._writer.write(bytes(log, 'utf-8'))
+        self._logs_counter += 1
 
     def reset(self):
         self._decompress_size = 0
@@ -120,7 +122,7 @@ class LogzioShipper(object):
     MAX_BULK_SIZE_IN_BYTES = 3 * 1024 * 1024
     ACCOUNT_TOKEN_ENV = 'TOKEN'
     REGION_ENV = 'REGION'
-    URL_ENV = 'URL'
+    URL_ENV = 'LISTENER_URL'
     BASE_URL = "https://listener.logz.io:8071"
     region = None
 
@@ -136,9 +138,11 @@ class LogzioShipper(object):
             self.region = os.environ.get(self.REGION_ENV)
             self._logzio_url = self.get_base_api_url()
         try:
-            self._logzio_url = "{0}/?token={1}".format(self._logzio_url, os.environ[self.ACCOUNT_TOKEN_ENV])
+            self._logzio_url = "{0}/?token={1}".format(
+                self._logzio_url, os.environ[self.ACCOUNT_TOKEN_ENV])
         except KeyError as e:
-            logger.error("Missing logz.io account token environment variable: {}".format(e))
+            logger.error(
+                "Missing logz.io account token environment variable: {}".format(e))
             raise
         try:
             self._compress = os.environ['COMPRESS'].lower() == "true"
@@ -223,7 +227,8 @@ class LogzioShipper(object):
 
         try:
             do_request()
-            logger.info("Successfully sent bulk of {} logs to Logz.io!".format(len(self._logs)))
+            logger.info(
+                "Successfully sent bulk of {} logs to Logz.io!".format(len(self._logs)))
         except MaxRetriesException:
             logger.error('Retry limit reached. Failed to send log entry.')
             raise MaxRetriesException()
@@ -232,15 +237,16 @@ class LogzioShipper(object):
                          "or badly formatted. response: {0}".format(e))
             logger.warning("Dropping logs that cause the bad response...")
         except UnauthorizedAccessException:
-            logger.error("You are not authorized with Logz.io! Token OK? dropping logs...")
+            logger.error(
+                "You are not authorized with Logz.io! Token OK? dropping logs...")
             raise UnauthorizedAccessException()
         except UnknownURL:
             logger.error("Please check your url...")
             raise UnknownURL()
         except urllib.error.HTTPError as e:
-            logger.error("Unexpected error while trying to send logs: {}".format(e))
+            logger.error(
+                "Unexpected error while trying to send logs: {}".format(e))
             raise
         except Exception as e:
             logger.error(e)
             raise
-

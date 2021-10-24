@@ -1,46 +1,56 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
 Description: "This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP."
 Parameters:
-  LogzioURL:
+  LogzioListenerUrl:
     Type: "String"
-    Description: "Deprecated. Use LogzioREGION instead"
+    Description: "The Logz.io listener URL for your region. You can find explanations here: https://docs.logz.io/user-guide/accounts/account-region.html" 
     Default: ""
 
-  LogzioREGION:
-    Type: "String"
-    Description: "Two-letter region code, or blank for US East (Northern Virginia). This determines your listener URL
-    (where you're shipping the logs to) and API URL. You can find your region code in the Regions and URLs at
-    https://docs.logz.io/user-guide/accounts/account-region.html#regions-and-urls table"
-    Default: "us"
-
-  LogzioTOKEN:
+  LogzioToken:
     Type: "String"
     Description: "Logz.io account token."
 
-  LogzioTYPE:
+  LogzioType:
     Type: "String"
     Description: "The log type you'll use with this Lambda.
     Please note that you should create a new Lambda for each log type you use.
     This can be a built-in log type, or your custom log type"
     Default: "logzio_cloudwatch_lambda"
 
-  LogzioFORMAT:
+  LogzioFormat:
     Type: "String"
-    Description: "json or text.
+    Description: "JSON or text.
     If json, the lambda function will attempt to parse the message field as JSON
     and populate the event data with the parsed fields."
     Default: "text"
+    AllowedValues:
+      - "text"
+      - "json"
 
-  LogzioCOMPRESS:
+  LogzioCompress:
     Type: "String"
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
     Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
 
-  LogzioENRICH:
+  LogzioSendAll:
+    Type: "String"
+    Description: "By default, we do not send logs of type START, END, REPORT. Choose true to send all log types."
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  LogzioEnrich:
     Type: "String"
     Description: "Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty."
+    Default: ""
+
+  LogGroup:
+    Type: "String"
+    Description: "CloudWatch Log Group name from where you want to send logs."
     Default: ""
 
 Outputs:
@@ -49,21 +59,73 @@ Outputs:
       Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
 
 Resources:
+  LambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt 
+        - LogzioCloudwatchLogsLambda
+        - Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Join 
+        - .
+        - - logs
+          - !Ref 'AWS::Region'
+          - amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+  LogzioSubscriptionFilter: 
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      LogGroupName: !Ref LogGroup
+      FilterPattern: "LogziFilter"
+      DestinationArn: !GetAtt 
+        - LogzioCloudwatchLogsLambda
+        - Arn
+    DependsOn:
+      - LambdaPermission
+  lambdaIamRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: LogzioCloudWatchShipper
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: LogzioCloudWatchShipper
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:PutResourcePolicy'
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
   LogzioCloudwatchLogsLambda:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Lambda::Function
     Properties:
       Runtime: python3.7
       Handler: lambda_function.lambda_handler
-      CodeUri: ./dist/logzio-cloudwatch.zip
+      Code:
+        S3Bucket: logzio-aws-integrations-us-east-1
+        S3Key: cloudwatch-auto-deployment/logzio-cloudwatch.zip
       FunctionName: logzio-cloudwatch-log-shipper
+      Role: !GetAtt lambdaIamRole.Arn
       MemorySize: 512
       Timeout: 60
       Environment:
         Variables:
-          REGION: !Ref LogzioREGION
-          URL: !Ref LogzioURL
-          TOKEN: !Ref LogzioTOKEN
-          TYPE: !Ref LogzioTYPE
-          FORMAT: !Ref LogzioFORMAT
-          COMPRESS: !Ref LogzioCOMPRESS
-          ENRICH: !Ref LogzioENRICH
+          LISTENER_URL: !Ref LogzioListenerUrl
+          TOKEN: !Ref LogzioToken
+          TYPE: !Ref LogzioType
+          FORMAT: !Ref LogzioFormat
+          COMPRESS: !Ref LogzioCompress
+          ENRICH: !Ref LogzioEnrich
+          SENDALL: !Ref LogzioSendAll
