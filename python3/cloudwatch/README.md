@@ -16,7 +16,7 @@ This is an AWS Lambda function that collects CloudWatch logs and sends them to L
 1. Open the AWS Lambda Console, and click **Create function**.
 2. Choose **Author from scratch**.
 3. In **Name**, add the log type to the name of the function.
-4. In **Runtime**, choose **Python 3.7**.
+4. In **Runtime**, choose **Python 3.9**.
 4. Click **Create Function**. 
   
 After a few moments, you'll see configuration options for your Lambda function. You'll need this page later on, so keep it open.
