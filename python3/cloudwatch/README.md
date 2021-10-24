@@ -59,7 +59,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 #### 4. Set the CloudWatch Logs event trigger
 
 1. Find the **Add triggers** list (left side of the Designer panel) and choose **CloudWatch Logs** from this list.
-2. Below the Designer, you'll see the Configure triggers panel. Choose the **Log group** that the Lambda function will watch.
+2. In the **Log group** field, select the applicable log group.  
 3. Type a **Filter name** (required) and **Filter pattern** (optional).
 4. Click **Add**, and then click **Save** at the top of the page.
 
