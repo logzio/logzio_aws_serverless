@@ -127,6 +127,13 @@ In the **Configure stack options** screen, assign tags to this function to easil
 In the final screen, AWS will automatically show a notice requesting you to acknowledge that AWS CloudFormation might create IAM resources. Check the box and click **Create Stack**.
 
 ![Screen_4](img/screen-3.png)
+  
+
+#### 5. Check Logz.io for your logs
+
+Give your logs some time to get from your system to ours, and then open [Kibana](https://app.logz.io/#/dashboard/kibana).
+
+If you still don't see your logs, see [log shipping troubleshooting](https://docs.logz.io/user-guide/log-shipping/log-shipping-troubleshooting.html).
 
 </div>
 <!-- tab:end -->
