@@ -3,7 +3,7 @@
 You can generate test events using the Logz.io Lambda test events generator and add these events to your Lambda function. This functionality is currently only available on Linux & macOS.
 
 
-## Generate a test event
+## 1. Generate a test event
 
 1. In your terminal, run the following command:
   
@@ -15,7 +15,7 @@ You can generate test events using the Logz.io Lambda test events generator and 
                
 2. Copy the output JSON.
 
-## Add the generated test event to your Lambda function
+## 2. Add the generated test event to your Lambda function
 
 1. Select the Lambda function that you need to add the test event to.
 2. Open the **Test** tab.
@@ -26,6 +26,6 @@ You can generate test events using the Logz.io Lambda test events generator and 
 7. Select **Format** to format the test event.
 8. Select **Save changes**.
 
-## Run the test event
+## 3. Run the test event
 
 To run the test event, select **Test** in the **Test** tab. The Lambda function will run and generate two logs in your account.
