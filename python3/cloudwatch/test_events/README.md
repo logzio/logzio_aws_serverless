@@ -9,7 +9,7 @@ You can generate test events using the Logz.io Lambda test events generator and 
 1. In your terminal, run the following command:
   
    ```shell
-   bash <(curl -s https://raw.githubusercontent.com/logzio/logzio_aws_serverless/tree/master/python3/cloudwatch/test_events/test_event_generator.sh)      
+   bash <(curl -s https://raw.githubusercontent.com/logzio/logzio_aws_serverless/master/python3/cloudwatch/test_events/test_event_generator.sh)      
    ```
                
    This script generates a test event with a UTC timestamp of the moment you run the script.
