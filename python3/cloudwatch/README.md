@@ -87,7 +87,11 @@ This is an AWS Lambda function that's subscribes to the CloudWatch log groups an
 
 To start just press the button and follow the instructions:
 
-[![Deploy to AWS](https://dytvr9ot2sszz.cloudfront.net/logz-docs/lights/LightS-button.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template?templateURL=https://logzio-aws-integrations-us-east-1.s3.amazonaws.com/cloudwatch-auto-deployment/auto-deployment.yaml&stackName=logzio-cloudwatch-shipper)
+| REGION | DEPLOYMENT |
+| --- | --- |
+| `us-east-1` | [![Deploy to AWS](https://dytvr9ot2sszz.cloudfront.net/logz-docs/lights/LightS-button.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template?templateURL=https://logzio-aws-integrations-us-east-1.s3.amazonaws.com/cloudwatch-auto-deployment/auto-deployment.yaml&stackName=logzio-cloudwatch-shipper) |
+| `eu-west-1` |  [![Deploy to AWS](https://dytvr9ot2sszz.cloudfront.net/logz-docs/lights/LightS-button.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/template?templateURL=https://logzio-aws-integrations-eu-west-1.s3.amazonaws.com/cloudwatch-auto-deployment/auto-deployment.yaml&stackName=logzio-cloudwatch-shipper) |
+| `eu-central-1` |  [![Deploy to AWS](https://dytvr9ot2sszz.cloudfront.net/logz-docs/lights/LightS-button.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/template?templateURL=https://logzio-aws-integrations-eu-central-1.s3.amazonaws.com/cloudwatch-auto-deployment/auto-deployment.yaml&stackName=logzio-cloudwatch-shipper) |
 
 You'll be taken to AWS, where you need to configure the resources to be deployed. Keep the defaults and click Next:
 
