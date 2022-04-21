@@ -79,7 +79,7 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 
 ## Automated CloudFormation deployment
 
-This is an AWS Lambda function that's subscribes to the CloudWatch log groups and sends them to Logz.io in bulk, over HTTP.
+This is an AWS Lambda function that subscribes to the CloudWatch log groups and sends them to Logz.io in bulk, over HTTP.
 
 <div class="tasklist">
 
