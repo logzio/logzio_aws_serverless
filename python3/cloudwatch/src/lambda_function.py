@@ -76,13 +76,7 @@ def _parse_to_json(log):
             json_object = json.loads(log['message'])
             try:
                 for key, value in json_object.items():
-                    try:
-                        log[key] = value
-                    except Exception as ex_inner:
-                        logger.warning(
-                            f'Error occurred while trying to parse log to JSON: {ex_inner}. Field will be passed as string.')
-                        log[key] = str(value)
-                        pass
+                    log[key] = value
             except Exception as ex_outer:
                 logger.warning(f'Error occurred while trying to parse log to JSON: {ex_outer}. Field will be passed as string.')
                 pass
