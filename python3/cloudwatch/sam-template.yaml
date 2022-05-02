@@ -115,7 +115,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       Code:
         S3Bucket: logzio-aws-integrations-us-east-1
-        S3Key: cloudwatch-auto-deployment/logzio-cloudwatch.zip
+        S3Key: cloudwatch-auto-deployment/0.0.2/logzio-cloudwatch.zip
       FunctionName: logzio-cloudwatch-log-shipper
       Role: !GetAtt lambdaIamRole.Arn
       MemorySize: 512

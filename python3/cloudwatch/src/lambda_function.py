@@ -74,9 +74,14 @@ def _parse_to_json(log):
     try:
         if os.environ['FORMAT'].lower() == 'json':
             json_object = json.loads(log['message'])
+            if isinstance(json_object, list):
+                # In this case, json_object doesn't have the items() method
+                logger.info('Field message is a list and cannot be parsed to JSON')
+                return
             for key, value in json_object.items():
                 log[key] = value
-    except (KeyError, ValueError) as e:
+    except Exception as e:
+        logger.warning(f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
         pass
 
 
