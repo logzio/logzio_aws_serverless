@@ -156,6 +156,6 @@ def lambda_handler(event, context):
             if len(json_log) <= max_size_of_log:
                 shipper.add(log)
             else:
-                logger.warning("Sending to logzio SKIPPED, ignore json string size is " + str(len(json_log)))
+                logger.warning("SKIPPED pushing to logzio, ignored json string size is " + str(len(json_log)))
 
     shipper.flush()
