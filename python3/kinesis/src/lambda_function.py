@@ -67,7 +67,8 @@ def _add_record_kinesis_fields(log, record_kinesis_field):
             log["type"] = _get_type(record_data)
         elif key == "approximateArrivalTimestamp":
             try:
-                log["@timestamp"] = dt.datetime.utcfromtimestamp(value).isoformat() + 'Z'
+                log["@timestamp"] = dt.datetime.utcfromtimestamp(
+                    value).isoformat() + 'Z'
             except ValueError:
                 # If we can't convert to ISO8601 format
                 # we will continue without adding @timestamp field
@@ -96,10 +97,15 @@ def split_by_fields(log, field):
         logs.append(temp_log)
     return logs
 
+
 def lambda_handler(event, context):
     # type: (dict, 'LambdaContext') -> None
-    logger.info("Received {} raw Kinesis records.".format(len(event["Records"])))
+    logger.info("Received {} raw Kinesis records.".format(
+        len(event["Records"])))
     multiple_msgs = os.environ.get(MESSAGES_ARRAY_ENV)
+
+    if not os.environ.get('COMPRESS'):
+        os.environ['COMPRESS'] = "True"
 
     shipper = LogzioShipper()
     for record in event['Records']:
