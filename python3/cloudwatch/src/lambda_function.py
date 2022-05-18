@@ -143,6 +143,7 @@ def lambda_handler(event, context):
     aws_logs_data = _extract_aws_logs_data(event)
     additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper()
+    max_size_of_log = int(os.getenv('MAX_LOG_SIZE', 10000))
 
     logger.info("About to send {} logs".format(
         len(aws_logs_data['logEvents'])))
@@ -151,6 +152,10 @@ def lambda_handler(event, context):
             raise TypeError(
                 "Expected log inside logEvents to be a dict but found another type")
         if _parse_cloudwatch_log(log, additional_data):
-            shipper.add(log)
+            json_log = json.dumps(log)
+            if len(json_log) <= max_size_of_log:
+                shipper.add(log)
+            else:
+                logger.warning("Sending to logzio SKIPPED, ignore json string size is " + str(len(json_log)))
 
     shipper.flush()

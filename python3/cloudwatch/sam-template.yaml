@@ -53,6 +53,11 @@ Parameters:
     Description: "CloudWatch Log Group name from where you want to send logs."
     Default: ""
 
+  MaxLogSize:
+    Type: Number
+    Description: "Maximum size of the log which needs to be push to Logzio"
+    Default: 10000
+
 Outputs:
     LogzioCloudwatchLogsLambda:
       Description: "Logz.io CW logs lambda ARN"
@@ -129,3 +134,4 @@ Resources:
           COMPRESS: !Ref LogzioCompress
           ENRICH: !Ref LogzioEnrich
           SENDALL: !Ref LogzioSendAll
+          MAX_LOG_SIZE: !Ref MaxLogSize
