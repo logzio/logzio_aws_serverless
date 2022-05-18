@@ -36,7 +36,7 @@ Parameters:
   LogzioCOMPRESS:
     Type: "String"
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
-    Default: "false"
+    Default: "true"
 
   LogzioMessagesArray:
     Type: "String"
