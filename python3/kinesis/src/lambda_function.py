@@ -105,7 +105,7 @@ def lambda_handler(event, context):
     multiple_msgs = os.environ.get(MESSAGES_ARRAY_ENV)
 
     if not os.environ.get('COMPRESS'):
-        os.environ['COMPRESS'] = "True"
+        os.environ['COMPRESS'] = str(True)
 
     shipper = LogzioShipper()
     for record in event['Records']:
