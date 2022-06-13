@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
 Description: "This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP."
 Parameters:
   LogzioListenerUrl:
@@ -59,67 +60,23 @@ Outputs:
       Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
 
 Resources:
-  LambdaPermission:
-    Type: 'AWS::Lambda::Permission'
-    Properties:
-      FunctionName: !GetAtt 
-        - LogzioCloudwatchLogsLambda
-        - Arn
-      Action: 'lambda:InvokeFunction'
-      Principal: !Join 
-        - .
-        - - logs
-          - !Ref 'AWS::Region'
-          - amazonaws.com
-      SourceAccount: !Ref 'AWS::AccountId'
-  LogzioSubscriptionFilter: 
-    Type: AWS::Logs::SubscriptionFilter
-    Properties: 
-      LogGroupName: !Ref LogGroup
-      FilterPattern: "LogziFilter"
-      DestinationArn: !GetAtt 
-        - LogzioCloudwatchLogsLambda
-        - Arn
-    DependsOn:
-      - LambdaPermission
-  lambdaIamRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      RoleName: LogzioCloudWatchShipper
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      Policies:
-        - PolicyName: LogzioCloudWatchShipper
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'logs:PutResourcePolicy'
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                Resource: '*'
   LogzioCloudwatchLogsLambda:
-    Type: AWS::Lambda::Function
+    Type: 'AWS::Serverless::Function'
     Properties:
       Runtime: python3.7
       Handler: lambda_function.lambda_handler
-      Code:
-        S3Bucket: logzio-aws-integrations-us-east-1
-        S3Key: cloudwatch-auto-deployment/0.0.2/logzio-cloudwatch.zip
+      CodeUri:
+        Bucket: logzio-aws-integrations-us-east-1
+        Key: cloudwatch-auto-deployment/0.0.2/logzio-cloudwatch.zip
       FunctionName: logzio-cloudwatch-log-shipper
-      Role: !GetAtt lambdaIamRole.Arn
       MemorySize: 512
       Timeout: 60
+      Events:
+        LOsubscription0:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref LogGroup
+            FilterPattern: "" #Match everything
       Environment:
         Variables:
           LISTENER_URL: !Ref LogzioListenerUrl
