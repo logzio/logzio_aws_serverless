@@ -81,7 +81,6 @@ Resources:
         Variables:
           LISTENER_URL: !Ref LogzioListenerUrl
           TOKEN: !Ref LogzioToken
-          REGION: !Ref LogzioRegion
           TYPE: !Ref LogzioType
           FORMAT: !Ref LogzioFormat
           COMPRESS: !Ref LogzioCompress
