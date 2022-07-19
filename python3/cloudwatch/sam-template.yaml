@@ -67,7 +67,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       CodeUri:
         Bucket: logzio-aws-integrations-us-east-1
-        Key: cloudwatch-auto-deployment/0.0.2/logzio-cloudwatch.zip
+        Key: cloudwatch-auto-deployment/0.0.3/logzio-cloudwatch.zip
       FunctionName: logzio-cloudwatch-log-shipper
       MemorySize: 512
       Timeout: 60
@@ -81,6 +81,7 @@ Resources:
         Variables:
           LISTENER_URL: !Ref LogzioListenerUrl
           TOKEN: !Ref LogzioToken
+          REGION: !Ref LogzioRegion
           TYPE: !Ref LogzioType
           FORMAT: !Ref LogzioFormat
           COMPRESS: !Ref LogzioCompress
