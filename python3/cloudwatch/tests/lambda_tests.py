@@ -61,6 +61,15 @@ class TestLambdaFunction(unittest.TestCase):
         })
 
     @staticmethod
+    # Build random string with STRING_LEN chars
+    def _json_static_message_string_builder(message):
+        return json.dumps({
+            'timestamp': 'abcd',
+            'requestID': 'efgh',
+            'message': message
+        })
+
+    @staticmethod
     def _json_nodejs_builder():
         s = string.ascii_lowercase + string.digits
         message = ','.join(random.sample(s, STRING_LEN))
@@ -247,6 +256,62 @@ class TestLambdaFunction(unittest.TestCase):
 
         with self.assertRaises(IndexError):
             worker.lambda_handler(event['enc'], Context)
+
+    @httpretty.activate
+    def test_whitelist_event(self):
+        os.environ['WHITELIST'] = "whitelist"
+        fixed_string_generated = False
+
+        def event_builder():
+            nonlocal fixed_string_generated
+            if fixed_string_generated:
+                return self._json_string_builder()
+            else:
+                fixed_string_generated = True
+                return self._json_static_message_string_builder("whitelist1")
+
+        event = self._generate_aws_logs_event(event_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
+
+        request = httpretty.HTTPretty.last_request
+        body_logs_list = request.body.splitlines()
+
+        for l in body_logs_list:
+            log = json.loads(l)
+            self.assertTrue('whitelist' in log['message'])
+
+    @httpretty.activate
+    def test_blacklist_event(self):
+        os.environ['BLACKLIST'] = "blacklist"
+        fixed_string_generated = False
+
+        def event_builder():
+            nonlocal fixed_string_generated
+            if fixed_string_generated:
+                return self._json_string_builder()
+            else:
+                fixed_string_generated = True
+                return self._json_static_message_string_builder("blacklist1")
+
+        event = self._generate_aws_logs_event(event_builder)
+        httpretty.register_uri(httpretty.POST, self._logzioUrl, body="first", status=200,
+                               content_type="application/json")
+        try:
+            worker.lambda_handler(event['enc'], Context)
+        except Exception:
+            self.fail("Failed on handling a legit event. Expected status_code = 200")
+
+        request = httpretty.HTTPretty.last_request
+        body_logs_list = request.body.splitlines()
+
+        for l in body_logs_list:
+            log = json.loads(l)
+            self.assertFalse('blacklist' in log['message'])
 
 
 if __name__ == '__main__':

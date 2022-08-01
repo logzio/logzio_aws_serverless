@@ -3,6 +3,7 @@ import gzip
 import json
 from dateutil import parser
 import os
+import re
 from io import BytesIO
 
 from python3.shipper.shipper import LogzioShipper
@@ -117,6 +118,10 @@ def _parse_cloudwatch_log(log, additional_data):
     _add_timestamp(log)
     if LAMBDA_LOG_GROUP in additional_data['logGroup']:
         _extract_lambda_log_message(log)
+    if _has_whitelist():
+        return _is_whitelisted_log(log)
+    if _is_blacklisted_log(log):
+        return False
     log.update(additional_data)
     _parse_to_json(log)
     return True
@@ -165,6 +170,30 @@ def _get_additional_logs_data(aws_logs_data, context):
         logger.info("Using default TYPE 'logzio_cloudwatch_lambda'.")
         additional_data['type'] = 'logzio_cloudwatch_lambda'
     return additional_data
+
+
+def _has_whitelist():
+    # type: () -> bool
+    return os.environ.get('WHITELIST') is not None
+
+def _is_whitelisted_log(log):
+    # type: (dict) -> bool
+    sep = os.environ.get('WHITELIST_SEPARATOR', ';')
+    whitelisted_regexps = os.environ.get('WHITELIST', '').split(sep)
+    for r in whitelisted_regexps:
+        if not re.search(r, log['message']):
+            return False
+    return True
+
+
+def _is_blacklisted_log(log):
+    # type: (dict) -> bool
+    sep = os.environ.get('BLACKLIST_SEPARATOR', ';')
+    blacklisted_regexps = os.environ.get('BLACKLIST', '').split(sep)
+    for r in blacklisted_regexps:
+        if re.search(r, log['message']):
+            return True
+    return False
 
 
 def lambda_handler(event, context):
