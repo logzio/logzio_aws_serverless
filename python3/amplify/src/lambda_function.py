@@ -100,7 +100,7 @@ def _get_additional_logs_data(log, context):
     try:
         log['type'] = os.environ['TYPE']
     except KeyError:
-        logger.info("Using default TYPE 'logzio_amplify_access_lambda'.")
+        logger.info(f"Using default TYPE {DEFAULT_TYPE}.")
         log['type'] = DEFAULT_TYPE
     return log
 
@@ -115,12 +115,10 @@ def lambda_handler(event, context):
         len(aws_logs_data)))
     for log in aws_logs_data:
         try:
-
             json_log = json.loads(log)
-
         except Exception as e:
             logger.warning(
-                f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
+                f'Error occurred while trying to parse log to JSON: {e}.')
             continue
 
         json_log = _get_additional_logs_data(json_log, context)
