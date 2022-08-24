@@ -7,12 +7,11 @@ import datetime
 import os.path
 import urllib.request
 
-# from python3.shipper.shipper import LogzioShipper
 from python3.shipper.shipper import LogzioShipper
 
-FIELDNAMES = ('date', 'time', 'x-edge-location', 'sc-bytes', 'c-ip', 'cs-method', 'cs\(Host)', 'cs-uri-stem', 'sc-status', 'cs\(Referer)', 'cs\(User-Agent)', 'cs-uri-query',	'cs\(Cookie)', 'x-edge-result-type', 'x-edge-request-id', 'x-host-header', 'cs-protocol', 'cs-bytes', 'time-taken',
-                      'x-forwarded-for', 'ssl-protocol', 'ssl-cipher', 'x-edge-response-result-type', 'cs-protocol-version', 'fle-status', 'fle-encrypted-fields', 'c-port', 'time-to-first-byte', 'x-edge-detailed-result-type', 'sc-content-type', 'sc-content-len', 'sc-range-start', 'sc-range-end')
-
+FIELD_NAMES = ('date', 'time', 'x-edge-location', 'sc-bytes', 'c-ip', 'cs-method', 'cs\(Host)', 'cs-uri-stem', 'sc-status', 'cs\(Referer)', 'cs\(User-Agent)', 'cs-uri-query',	'cs\(Cookie)', 'x-edge-result-type', 'x-edge-request-id', 'x-host-header', 'cs-protocol', 'cs-bytes', 'time-taken',
+               'x-forwarded-for', 'ssl-protocol', 'ssl-cipher', 'x-edge-response-result-type', 'cs-protocol-version', 'fle-status', 'fle-encrypted-fields', 'c-port', 'time-to-first-byte', 'x-edge-detailed-result-type', 'sc-content-type', 'sc-content-len', 'sc-range-start', 'sc-range-end')
+DEFAULT_TYPE = 'logzio_amplify_access_lambda'
 
 # set logger
 logger = logging.getLogger()
@@ -37,13 +36,13 @@ def get_amplify_access_log_link(access_logs_starttime, access_logs_endtime):
             f'Error occurred while trying get access url please check your credentials: {e}.')
 
 
-def covert_csv_to_array_of_logs(log_url):
+def convert_csv_to_array_of_logs(log_url):
     json_array = []
 
     try:
         response = urllib.request.urlopen(log_url)
         lines = [l.decode('utf-8') for l in response.readlines()]
-        reader = csv.DictReader(lines, FIELDNAMES)
+        reader = csv.DictReader(lines, FIELD_NAMES)
 
         for row in reader:
             json_array.append(json.dumps(row))
@@ -70,7 +69,7 @@ def _extract_aws_amplify_logs_data(event):
         log_url = get_amplify_access_log_link(
             access_logs_starttime, access_logs_endtime)
 
-        logs = covert_csv_to_array_of_logs(log_url)
+        logs = convert_csv_to_array_of_logs(log_url)
 
         return logs
 
@@ -102,7 +101,7 @@ def _get_additional_logs_data(log, context):
         log['type'] = os.environ['TYPE']
     except KeyError:
         logger.info("Using default TYPE 'logzio_amplify_access_lambda'.")
-        log['type'] = 'logzio_amplify_access_lambda'
+        log['type'] = DEFAULT_TYPE
     return log
 
 
@@ -115,11 +114,14 @@ def lambda_handler(event, context):
     logger.info("About to send {} logs".format(
         len(aws_logs_data)))
     for log in aws_logs_data:
-        json_log = json.loads(log)
+        try:
 
-        if not isinstance(json_log, dict):
-            raise TypeError(
-                "Expected log to be a dict but found another type")
+            json_log = json.loads(log)
+
+        except Exception as e:
+            logger.warning(
+                f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
+            continue
 
         json_log = _get_additional_logs_data(json_log, context)
         json_log = _add_timestamp(json_log)

@@ -2,12 +2,9 @@
 
 This is an AWS Lambda function that collects Amplify access logs and sends them to Logz.io in bulk over HTTP.
 
--   Option 1: [Manual Lambda configuration](#manual-lambda-configuration)
-<!-- - Option 2: [Automated CloudFormation deployment](#automated-cloudformation-deployment) -->
-
 <div id="manual-lambda-configuration">
 
-## Manual configuration with a Lambda function
+## Configuration with a Lambda function
 
 <div class="tasklist">
   
