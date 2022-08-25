@@ -72,7 +72,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 4. On the **Create Policy** page, select the **JSON** tab.
    ![JSON-tab](img/json-tab.png)
 
-5. On A JSON tab please fill in JSON with your parameters
+5. Fill in JSON with your parameters as follows:
 
 ```
 {
