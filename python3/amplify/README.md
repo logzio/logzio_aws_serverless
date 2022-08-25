@@ -63,7 +63,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 #### 5. Update Permissions for Lambda Function
 
 1. Go to **Configuration** in your Lambda function and select the **Permissions** tab.
-2. Click on A role name see in example **lambda-basic** it will redirect you to the IAM> Roles> lambda-basic
+2. Click the role name shown in the example **lambda-basic**. It will redirect you to the **IAM> Roles> lambda-basic**.
    ![Lambda-role](img/lambda-role.png)
 
 3. On a role page inside Permissions tabs you will see dropdown **Add permissions** and click on **Create inline policy** it will redirect you to Create Policy page
