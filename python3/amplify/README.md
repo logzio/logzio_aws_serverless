@@ -66,7 +66,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 2. Click the role name shown in the example **lambda-basic**. It will redirect you to the **IAM> Roles> lambda-basic**.
    ![Lambda-role](img/lambda-role.png)
 
-3. On a role page inside Permissions tabs you will see dropdown **Add permissions** and click on **Create inline policy** it will redirect you to Create Policy page
+3. On the role page inside the **Permissions** tab, select the dropdown **Add permissions** and click on **Create inline policy**. It will redirect you to the **Create Policy** page.
    ![Create-inline](img/create-inline.png)
 
 4. On Create Policy page you will see 2 tabs and you need to choose JSON tab
