@@ -56,7 +56,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 1. Find the **Add triggers** list (left side of the Designer panel) and choose **EventBridge (CloudWatch Events)** from this list.
 2. If you don't have a pre-defined schedule type (e.g., 1min), click **Create new rule** in **Rule**.
 3. In **Rule name**, enter a name to uniquely identify your rule.
-4. **Rule description** (Optional) Provide an optional description for your rule.
+4. In **Rule description**, if required, provide an optional description for your rule.
 
 5. In **Rule type**, choose the schedule expression that is equal to the TIMEOUT of the environment variable (e.g., 5 minutes).
 
