@@ -58,7 +58,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 3. **Rule name** enter a name to uniquely identify your rule.
 4. **Rule description** (Optional) Provide an optional description for your rule.
 
-5. **Rule type** choose Schedule expression that suppose to be equal to the TIMEOUT of enviroment variable (ex. rate(5 minutes))
+5. In **Rule type**, choose the schedule expression that is equal to the TIMEOUT of the environment variable (e.g., 5 minutes).
 
 #### 5. Update Permissions for Lambda Function
 
