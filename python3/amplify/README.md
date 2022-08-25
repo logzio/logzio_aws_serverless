@@ -91,7 +91,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 
 * Replace `AWS_REGION` with the AWS region of your Amplify App (e.g.,us-west-2).
 * Replace `XXX66029XXXX` with your AWS Account ID.
-XXXXdn0mprXXXX with the AWS Amplify App Id
+* Replace `XXXXdn0mprXXXX` with the AWS Amplify App ID.
 
 #### 6. Check Logz.io for your logs
 
