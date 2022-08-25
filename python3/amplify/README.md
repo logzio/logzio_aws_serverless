@@ -89,7 +89,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 }
 ```
 
-AWS_REGION where your Amplify App is located(ex. us-west-2)
+* Replace `AWS_REGION` with the AWS region of your Amplify App (e.g.,us-west-2).
 XXX66029XXXX with your AWS Account Id
 XXXXdn0mprXXXX with the AWS Amplify App Id
 
