@@ -69,7 +69,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 3. On the role page inside the **Permissions** tab, select the dropdown **Add permissions** and click on **Create inline policy**. It will redirect you to the **Create Policy** page.
    ![Create-inline](img/create-inline.png)
 
-4. On Create Policy page you will see 2 tabs and you need to choose JSON tab
+4. On the **Create Policy** page, select the **JSON** tab.
    ![JSON-tab](img/json-tab.png)
 
 5. On A JSON tab please fill in JSON with your parameters
