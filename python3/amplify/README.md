@@ -54,7 +54,7 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 #### 4. Set the EventBridge (CloudWatch Events) trigger
 
 1. Find the **Add triggers** list (left side of the Designer panel) and choose **EventBridge (CloudWatch Events)** from this list.
-2. If you don't have pre defined schedule type(ex 1min) In the **Rule** click on create new rule.
+2. If you don't have a pre-defined schedule type (e.g., 1min), click **Create new rule** in **Rule**.
 3. **Rule name** enter a name to uniquely identify your rule.
 4. **Rule description** (Optional) Provide an optional description for your rule.
 
