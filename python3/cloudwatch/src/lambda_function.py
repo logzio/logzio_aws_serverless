@@ -191,6 +191,8 @@ def _is_blacklisted_log(log):
     sep = os.environ.get('BLACKLIST_SEPARATOR', ';')
     blacklisted_regexps = os.environ.get('BLACKLIST', '').split(sep)
     for r in blacklisted_regexps:
+        if r == '':
+            continue
         if re.search(r, log['message']):
             return True
     return False
