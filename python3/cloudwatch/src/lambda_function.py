@@ -13,6 +13,23 @@ LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
               'warning', 'error', 'err', 'critical', 'crit', 'fatal',
               'severe', 'emerg', 'emergency']
 
+LOG_GROUP_TO_PREFIX = {
+    "/aws/apigateway/": "apigateway",
+    "/aws/rds/cluster/": "rds",
+    "/aws/cloudhsm/": "cloudhsm",
+    "aws-cloudtrail-logs-": "cloudtrail",
+    "/aws/codebuild/": "codebuild",
+    "/aws/connect/": "connect",
+    "/aws/elasticbeanstalk/": "elasticbeanstalk",
+    "/aws/ecs/": "ecs",
+    "/aws/eks/": "eks",
+    "/aws-glue/": "aws-glue",
+    "AWSIotLogsV2": "aws-iot",
+    "/aws/lambda/": "lambda",
+    "/aws/macie/": "macie",
+    "/aws/amazonmq/broker/": "amazon-mq"
+}
+
 PYTHON_EVENT_SIZE = 3
 NODEJS_EVENT_SIZE = 4
 LAMBDA_LOG_GROUP = '/aws/lambda/'
@@ -89,10 +106,7 @@ def _parse_cloudwatch_log(log, additional_data):
     # type: (dict, dict) -> bool
     _add_timestamp(log)
     if LAMBDA_LOG_GROUP in additional_data['logGroup']:
-        if _is_valid_log(log):
-            _extract_lambda_log_message(log)
-        else:
-            return False
+        _extract_lambda_log_message(log)
     log.update(additional_data)
     _parse_to_json(log)
     return True
@@ -103,6 +117,17 @@ def _get_additional_logs_data(aws_logs_data, context):
     additional_fields = ['logGroup', 'logStream', 'messageType', 'owner']
     additional_data = dict(
         (key, aws_logs_data[key]) for key in additional_fields)
+    try:
+        if 'logGroup' in additional_data:
+            service = get_service_by_log_group_prefix(additional_data['logGroup'])
+            if service == '':
+                logger.info(f'Mapping from log group to service does not exist for log group {additional_data["logGroup"]}')
+            else:
+                additional_data['service'] = service
+        else:
+            logger.info('Field logGroup does not appear in data. Field service will not be added')
+    except Exception as e:
+        logger.warning(f'Error while trying to get service name: {e}')
     try:
         additional_data['function_version'] = context.function_version
         additional_data['invoked_function_arn'] = context.invoked_function_arn
@@ -129,14 +154,6 @@ def _get_additional_logs_data(aws_logs_data, context):
     return additional_data
 
 
-def _is_valid_log(log):
-    # type (dict) -> bool
-    message = log['message']
-    is_info_log = message.startswith('START') or message.startswith(
-        'END') or message.startswith('REPORT')
-    return not is_info_log
-
-
 def lambda_handler(event, context):
     # type (dict, 'LambdaContext') -> None
 
@@ -154,3 +171,10 @@ def lambda_handler(event, context):
             shipper.add(log)
 
     shipper.flush()
+
+
+def get_service_by_log_group_prefix(log_group):
+    for key in LOG_GROUP_TO_PREFIX:
+        if log_group.startswith(key):
+            return LOG_GROUP_TO_PREFIX[key]
+    return ''

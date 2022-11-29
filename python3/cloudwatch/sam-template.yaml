@@ -2,23 +2,23 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
 Description: "This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk, over HTTP."
 Parameters:
-  LogzioListenerUrl:
+  logzioListener:
     Type: "String"
     Description: "The Logz.io listener URL for your region. You can find explanations here: https://docs.logz.io/user-guide/accounts/account-region.html" 
     Default: ""
 
-  LogzioToken:
+  logzioToken:
     Type: "String"
     Description: "Logz.io account token."
 
-  LogzioType:
+  logzioType:
     Type: "String"
     Description: "The log type you'll use with this Lambda.
     Please note that you should create a new Lambda for each log type you use.
     This can be a built-in log type, or your custom log type"
     Default: "logzio_cloudwatch_lambda"
 
-  LogzioFormat:
+  logzioFormat:
     Type: "String"
     Description: "JSON or text.
     If json, the lambda function will attempt to parse the message field as JSON
@@ -28,28 +28,20 @@ Parameters:
       - "text"
       - "json"
 
-  LogzioCompress:
+  logzioCompress:
     Type: "String"
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
     Default: "false"
     AllowedValues:
       - "true"
       - "false"
-
-  LogzioSendAll:
-    Type: "String"
-    Description: "By default, we do not send logs of type START, END, REPORT. Choose true to send all log types."
-    Default: "false"
-    AllowedValues:
-      - "true"
-      - "false"
-
-  LogzioEnrich:
+      -
+  logzioEnrich:
     Type: "String"
     Description: "Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty."
     Default: ""
 
-  LogGroup:
+  logGroup:
     Type: "String"
     Description: "CloudWatch Log Group name from where you want to send logs."
     Default: ""
@@ -67,7 +59,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       CodeUri:
         Bucket: logzio-aws-integrations-us-east-1
-        Key: cloudwatch-auto-deployment/0.0.3/logzio-cloudwatch.zip
+        Key: cloudwatch-auto-deployment/1.0.0/logzio-cloudwatch.zip
       FunctionName: logzio-cloudwatch-log-shipper
       MemorySize: 512
       Timeout: 60
@@ -79,10 +71,9 @@ Resources:
             FilterPattern: "" #Match everything
       Environment:
         Variables:
-          LISTENER_URL: !Ref LogzioListenerUrl
-          TOKEN: !Ref LogzioToken
-          TYPE: !Ref LogzioType
-          FORMAT: !Ref LogzioFormat
-          COMPRESS: !Ref LogzioCompress
-          ENRICH: !Ref LogzioEnrich
-          SENDALL: !Ref LogzioSendAll
+          LISTENER_URL: !Ref logzioListener
+          TOKEN: !Ref logzioToken
+          TYPE: !Ref logzioType
+          FORMAT: !Ref logzioFormat
+          COMPRESS: !Ref logzioCompress
+          ENRICH: !Ref logzioEnrich
