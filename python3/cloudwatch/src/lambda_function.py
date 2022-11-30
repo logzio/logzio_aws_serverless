@@ -9,9 +9,9 @@ from python3.shipper.shipper import LogzioShipper
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
-LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
-              'warning', 'error', 'err', 'critical', 'crit', 'fatal',
-              'severe', 'emerg', 'emergency']
+LOG_LEVELS = ['ALERT', 'TRACE', 'DEBUG', 'NOTICE', 'INFO', 'WARN',
+              'WARNING', 'ERROR', 'ERR', 'CRITICAL', 'CRIT',
+              'FATAL', 'SEVERE', 'EMERG', 'EMERGENCY']
 
 LOG_GROUP_TO_PREFIX = {
     "/aws/apigateway/": "aws/apigateway",
@@ -60,9 +60,9 @@ def _extract_lambda_log_message(log):
     try:
         start_level = str_message.index('[')
         end_level = str_message.index(']')
-        log_level = str_message[start_level + 1:end_level]
-        if log_level.lower() in LOG_LEVELS:
-            log['log_level'] = log_level.upper()
+        log_level = str_message[start_level + 1:end_level].upper()
+        if log_level in LOG_LEVELS:
+            log['log_level'] = log_level
             start_split = end_level + 2
         else:
             start_split = 0
