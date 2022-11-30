@@ -14,20 +14,20 @@ LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
               'severe', 'emerg', 'emergency']
 
 LOG_GROUP_TO_PREFIX = {
-    "/aws/apigateway/": "apigateway",
-    "/aws/rds/cluster/": "rds",
-    "/aws/cloudhsm/": "cloudhsm",
-    "aws-cloudtrail-logs-": "cloudtrail",
-    "/aws/codebuild/": "codebuild",
-    "/aws/connect/": "connect",
-    "/aws/elasticbeanstalk/": "elasticbeanstalk",
-    "/aws/ecs/": "ecs",
-    "/aws/eks/": "eks",
-    "/aws-glue/": "aws-glue",
-    "AWSIotLogsV2": "aws-iot",
-    "/aws/lambda/": "lambda",
-    "/aws/macie/": "macie",
-    "/aws/amazonmq/broker/": "amazon-mq"
+    "/aws/apigateway/": "aws/apigateway",
+    "/aws/rds/cluster/": "aws/rds",
+    "/aws/cloudhsm/": "aws/cloudhsm",
+    "aws-cloudtrail-logs-": "aws/cloudtrail",
+    "/aws/codebuild/": "aws/codebuild",
+    "/aws/connect/": "aws/connect",
+    "/aws/elasticbeanstalk/": "aws/elasticbeanstalk",
+    "/aws/ecs/": "aws/ecs",
+    "/aws/eks/": "aws/eks",
+    "/aws-glue/": "glue",
+    "AWSIotLogsV2": "aws/iot",
+    "/aws/lambda/": "aws/lambda",
+    "/aws/macie/": "aws/macie",
+    "/aws/amazonmq/broker/": "aws/amazonmq"
 }
 
 PYTHON_EVENT_SIZE = 3
@@ -119,15 +119,15 @@ def _get_additional_logs_data(aws_logs_data, context):
         (key, aws_logs_data[key]) for key in additional_fields)
     try:
         if 'logGroup' in additional_data:
-            service = get_service_by_log_group_prefix(additional_data['logGroup'])
-            if service == '':
-                logger.info(f'Mapping from log group to service does not exist for log group {additional_data["logGroup"]}')
+            namespace = get_service_by_log_group_prefix(additional_data['logGroup'])
+            if namespace == '':
+                logger.info(f'Mapping from log group to namespace does not exist for log group {additional_data["logGroup"]}')
             else:
-                additional_data['service'] = service
+                additional_data['namespace'] = namespace
         else:
-            logger.info('Field logGroup does not appear in data. Field service will not be added')
+            logger.info('Field logGroup does not appear in data. Field namespace will not be added')
     except Exception as e:
-        logger.warning(f'Error while trying to get service name: {e}')
+        logger.warning(f'Error while trying to get namespace: {e}')
     try:
         additional_data['function_version'] = context.function_version
         additional_data['invoked_function_arn'] = context.invoked_function_arn

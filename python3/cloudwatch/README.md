@@ -119,5 +119,5 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 
 - **1.0.0**:
   - Lambda logs - send all logs include platform logs (START, END, REPORT).
-  - Add `service` field to logs - service name based on the log group name.
+  - Add `namespace` field to logs - service name based on the log group name.
   - Renaming of variables in Cloudformation template.
