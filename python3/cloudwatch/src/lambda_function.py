@@ -62,7 +62,7 @@ def _extract_lambda_log_message(log):
         end_level = str_message.index(']')
         log_level = str_message[start_level + 1:end_level]
         if log_level.lower() in LOG_LEVELS:
-            log['log_level'] = log_level
+            log['log_level'] = log_level.upper()
             start_split = end_level + 2
         else:
             start_split = 0
