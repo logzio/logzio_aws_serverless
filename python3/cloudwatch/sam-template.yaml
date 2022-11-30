@@ -66,7 +66,7 @@ Resources:
         LOsubscription0:
           Type: CloudWatchLogs
           Properties:
-            LogGroupName: !Ref LogGroup
+            LogGroupName: !Ref logGroup
             FilterPattern: "" #Match everything
       Environment:
         Variables:
