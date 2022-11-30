@@ -31,11 +31,10 @@ Parameters:
   logzioCompress:
     Type: "String"
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
-    Default: "false"
+    Default: "true"
     AllowedValues:
       - "true"
       - "false"
-      -
   logzioEnrich:
     Type: "String"
     Description: "Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty."
