@@ -118,6 +118,8 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 ## Changelog:
 
 - **1.0.0**:
+  - **Breaking changes**:
+    - For auto-detection of log level - log level will appear in upper case.
   - Lambda logs - send all logs include platform logs (START, END, REPORT).
   - Add `namespace` field to logs - service name based on the log group name.
   - Renaming of variables in Cloudformation template.
