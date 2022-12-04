@@ -9,9 +9,26 @@ from python3.shipper.shipper import LogzioShipper
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
-LOG_LEVELS = ['alert', 'trace', 'debug', 'notice', 'info', 'warn',
-              'warning', 'error', 'err', 'critical', 'crit', 'fatal',
-              'severe', 'emerg', 'emergency']
+LOG_LEVELS = ['ALERT', 'TRACE', 'DEBUG', 'NOTICE', 'INFO', 'WARN',
+              'WARNING', 'ERROR', 'ERR', 'CRITICAL', 'CRIT',
+              'FATAL', 'SEVERE', 'EMERG', 'EMERGENCY']
+
+LOG_GROUP_TO_PREFIX = {
+    "/aws/apigateway/": "aws/apigateway",
+    "/aws/rds/cluster/": "aws/rds",
+    "/aws/cloudhsm/": "aws/cloudhsm",
+    "aws-cloudtrail-logs-": "aws/cloudtrail",
+    "/aws/codebuild/": "aws/codebuild",
+    "/aws/connect/": "aws/connect",
+    "/aws/elasticbeanstalk/": "aws/elasticbeanstalk",
+    "/aws/ecs/": "aws/ecs",
+    "/aws/eks/": "aws/eks",
+    "/aws-glue/": "glue",
+    "AWSIotLogsV2": "aws/iot",
+    "/aws/lambda/": "aws/lambda",
+    "/aws/macie/": "aws/macie",
+    "/aws/amazonmq/broker/": "aws/amazonmq"
+}
 
 PYTHON_EVENT_SIZE = 3
 NODEJS_EVENT_SIZE = 4
@@ -43,8 +60,8 @@ def _extract_lambda_log_message(log):
     try:
         start_level = str_message.index('[')
         end_level = str_message.index(']')
-        log_level = str_message[start_level + 1:end_level]
-        if log_level.lower() in LOG_LEVELS:
+        log_level = str_message[start_level + 1:end_level].upper()
+        if log_level in LOG_LEVELS:
             log['log_level'] = log_level
             start_split = end_level + 2
         else:
@@ -89,10 +106,7 @@ def _parse_cloudwatch_log(log, additional_data):
     # type: (dict, dict) -> bool
     _add_timestamp(log)
     if LAMBDA_LOG_GROUP in additional_data['logGroup']:
-        if _is_valid_log(log):
-            _extract_lambda_log_message(log)
-        else:
-            return False
+        _extract_lambda_log_message(log)
     log.update(additional_data)
     _parse_to_json(log)
     return True
@@ -103,6 +117,17 @@ def _get_additional_logs_data(aws_logs_data, context):
     additional_fields = ['logGroup', 'logStream', 'messageType', 'owner']
     additional_data = dict(
         (key, aws_logs_data[key]) for key in additional_fields)
+    try:
+        if 'logGroup' in additional_data:
+            namespace = get_service_by_log_group_prefix(additional_data['logGroup'])
+            if namespace == '':
+                logger.info(f'Mapping from log group to namespace does not exist for log group {additional_data["logGroup"]}')
+            else:
+                additional_data['namespace'] = namespace
+        else:
+            logger.info('Field logGroup does not appear in data. Field namespace will not be added')
+    except Exception as e:
+        logger.warning(f'Error while trying to get namespace: {e}')
     try:
         additional_data['function_version'] = context.function_version
         additional_data['invoked_function_arn'] = context.invoked_function_arn
@@ -129,14 +154,6 @@ def _get_additional_logs_data(aws_logs_data, context):
     return additional_data
 
 
-def _is_valid_log(log):
-    # type (dict) -> bool
-    message = log['message']
-    is_info_log = message.startswith('START') or message.startswith(
-        'END') or message.startswith('REPORT')
-    return not is_info_log
-
-
 def lambda_handler(event, context):
     # type (dict, 'LambdaContext') -> None
 
@@ -154,3 +171,10 @@ def lambda_handler(event, context):
             shipper.add(log)
 
     shipper.flush()
+
+
+def get_service_by_log_group_prefix(log_group):
+    for key in LOG_GROUP_TO_PREFIX:
+        if log_group.startswith(key):
+            return LOG_GROUP_TO_PREFIX[key]
+    return ''
