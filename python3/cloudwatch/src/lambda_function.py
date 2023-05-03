@@ -74,13 +74,17 @@ def _extract_lambda_log_message(log):
     size = len(message_parts)
     if size == PYTHON_EVENT_SIZE or size == NODEJS_EVENT_SIZE:
         try:
+            # Parser only to check if timestamp for Python and NodeJS is pass without
+			# error, if not skip unparsing log and send as log message.
             parser.parse(message_parts[0])
             log['@timestamp'] = message_parts[0]
             log['requestID'] = message_parts[1]
             log['message'] = message_parts[size - 1]
             if size == NODEJS_EVENT_SIZE:
                 log['log_level'] = message_parts[2]
-        except ValueError:
+        except Exception as e:
+            logger.warning(
+                f'Error occurred while trying to parse log time: {e}.')
             pass
 
 
