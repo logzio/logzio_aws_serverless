@@ -117,7 +117,7 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 
 ## Changelog:
 - **1.1.0**:
-  - Validate log time for Python and NodeJS log type
+  - Add support to send Lambda Insights from AWS to logz.io platform. [Resolved issue](https://github.com/logzio/logzio_aws_serverless/issues/73)  
 
 - **1.0.0**:
   - **Breaking changes**:
