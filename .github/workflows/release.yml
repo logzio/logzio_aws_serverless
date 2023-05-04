@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Receive integraion
+    - name: Get integraion
       id: integration-receiver
       run: |
         integration=$(echo "${{ github.event.release.tag_name }}" | cut -d- -f2)
         echo "integration=${integration}" >> "$GITHUB_ENV"
-    - name: Receive version clean
+    - name: Get version clean
       id: version-receiver-without
       run: |
         version=$(echo "${{ github.event.release.tag_name }}" | cut -d- -f1)
@@ -109,7 +109,7 @@ jobs:
             aws s3 cp ./sam-template-${{ matrix.aws_region }}.yaml s3://logzio-aws-integrations-${{ matrix.aws_region }}/cloudwatch-auto-deployment/${{ env.version_without }}/sam-template.yaml --acl public-read
             aws s3 cp ./logzio-cloudwatch.zip s3://logzio-aws-integrations-${{ matrix.aws_region }}/cloudwatch-auto-deployment/${{ env.version_without }}/logzio-cloudwatch.zip --acl public-read
           else
-            aws s3 cp ./sam-template-${{ matrix.aws_region }}.yaml s3://logzio-aws-integrations-${{ matrix.aws_region }}/aws-kinesis/${{ env.version_without }}/sam-template.yaml --acl public-read
+            aws s3 cp ./sam-template-${{ matrix.aws_region }}.yaml s3://logzio-aws-integrations-${{ matrix.aws_region }}/aws-kinesis/${{ env.version_without }}/auto-deployment.yaml --acl public-read
             aws s3 cp ./logzio-kinesis.zip s3://logzio-aws-integrations-${{ matrix.aws_region }}/aws-kinesis/${{ env.version_without }}/logzio-kinesis.zip --acl public-read
           fi
         shell: bash
