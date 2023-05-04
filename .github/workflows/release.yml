@@ -1,0 +1,119 @@
+name: Upload new release
+on:
+  release:
+    types: [published]
+
+jobs:
+  build_function:
+    name: Build function
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Receive integraion
+      id: integration-receiver
+      run: |
+        integration=$(echo "${{ github.event.release.tag_name }}" | cut -d- -f2)
+        echo "integration=${integration}" >> "$GITHUB_ENV"
+    - name: Receive version clean
+      id: version-receiver-without
+      run: |
+        version=$(echo "${{ github.event.release.tag_name }}" | cut -d- -f1)
+        version_without=$(echo ${version:1})
+        echo "version_without=${version_without}" >> "$GITHUB_ENV"
+
+ 
+    - name: Zip Folder
+      run: |
+        if [[ "${{ env.integration }}" = "CloudWatch" ]]; then
+          cd python3/cloudwatch
+          make        
+          echo "release_file_path=python3/cloudwatch/dist/logzio-cloudwatch-log-shipper.zip" >> "$GITHUB_ENV"
+        else
+          cd python3/kinesis
+          make
+          echo "release_file_path=python3/kinesis/dist/logzio-kinesis-log-shipper.zip" >> "$GITHUB_ENV"
+        fi
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ${{ env.release_file_path }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN_GIT }}  
+  upload_to_buckets:
+    name: Upload to S3 buckets
+    runs-on: ubuntu-latest
+    needs: build_function
+    strategy:
+      matrix:
+        aws_region:
+          - 'us-east-1'
+          - 'us-east-2'
+          - 'us-west-1'
+          - 'us-west-2'
+          - 'eu-central-1'
+          - 'eu-north-1'
+          - 'eu-west-1'
+          - 'eu-west-2'
+          - 'eu-west-3'
+          - 'sa-east-1'
+          - 'ap-northeast-1'
+          - 'ap-northeast-2'
+          - 'ap-northeast-3'
+          - 'ap-south-1'
+          - 'ap-southeast-1'
+          - 'ap-southeast-2'
+          - 'ca-central-1'  
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Receive integraion
+        id: integration-receiver
+        run: |
+          integration=$(echo "${{ github.event.release.tag_name }}" | cut -d- -f2)
+          echo "integration=${integration}" >> "$GITHUB_ENV"
+      - name: Receive version clean
+        id: version-receiver-without
+        run: |
+         version=$(echo "${{ github.event.release.tag_name }}" | cut -d- -f1)
+         version_without=$(echo ${version:1})
+         echo "version_without=${version_without}" >> "$GITHUB_ENV"
+      - name: download zip
+        run: |
+          if [[ "${{ env.integration }}" = "CloudWatch" ]]; then
+            wget -c https://github.com/resdenia/github-action-aws-python/releases/download/${{ github.event.release.tag_name }}/logzio-cloudwatch-log-shipper.zip -O logzio-cloudwatch.zip
+          else
+            wget -c https://github.com/resdenia/github-action-aws-python/releases/download/${{ github.event.release.tag_name }}/logzio-kinesis-log-shipper.zip -O logzio-kinesis.zip
+          fi
+        shell: bash
+      - name: create new version
+        run: |
+          if [[ "${{ env.integration }}" = "CloudWatch" ]]; then
+            cp ./python3/cloudwatch/sam-template.yaml ./sam-template-${{ matrix.aws_region }}.yaml
+          else
+            cp ./python3/kinesis/sam-template.yaml ./sam-template-${{ matrix.aws_region }}.yaml
+          fi
+          sed -i "s/<<VERSION>>/${{ env.version_without }}/" "./sam-template-${{ matrix.aws_region }}.yaml"
+          sed -i "s/<<REGION>>/${{ matrix.aws_region }}/" "./sam-template-${{ matrix.aws_region }}.yaml"
+        shell: bash
+      - name: Upload to aws
+        run: |
+
+          sudo apt-get update
+          sudo apt-get install awscli
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
+          aws configure set region ${{ matrix.aws_region }}
+          if [[ "${{ env.integration }}" = "CloudWatch" ]]; then
+            aws s3 cp ./sam-template-${{ matrix.aws_region }}.yaml s3://logzio-aws-integrations-${{ matrix.aws_region }}/cloudwatch-auto-deployment/${{ env.version_without }}/sam-template.yaml --acl public-read
+            aws s3 cp ./logzio-cloudwatch.zip s3://logzio-aws-integrations-${{ matrix.aws_region }}/cloudwatch-auto-deployment/${{ env.version_without }}/logzio-cloudwatch.zip --acl public-read
+          else
+            aws s3 cp ./sam-template-${{ matrix.aws_region }}.yaml s3://logzio-aws-integrations-${{ matrix.aws_region }}/aws-kinesis/${{ env.version_without }}/sam-template.yaml --acl public-read
+            aws s3 cp ./logzio-kinesis.zip s3://logzio-aws-integrations-${{ matrix.aws_region }}/aws-kinesis/${{ env.version_without }}/logzio-kinesis.zip --acl public-read
+          fi
+        shell: bash
+      - name: Clean
+        run: |
+          rm ./sam-template-${{ matrix.aws_region }}.yaml
+          rm ./function.zip

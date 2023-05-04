@@ -71,7 +71,9 @@ Resources:
     Properties:
       Runtime: python3.7
       Handler: lambda_function.lambda_handler
-      CodeUri: ./logzio-kinesis-0.0.2.zip
+      CodeUri: 
+        Bucket: logzio-aws-integrations-<<REGION>>
+        Key: aws-kinesis/<<VERSION>>/logzio-kinesis.zip
       FunctionName: logzio-kinesis-stream-shipper
       MemorySize: 512
       Timeout: 60
