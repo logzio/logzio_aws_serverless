@@ -36,9 +36,11 @@ PYTHON_EVENT_SIZE = 3
 NODEJS_EVENT_SIZE = 4
 LAMBDA_LOG_GROUP = '/aws/lambda/'
 
-
 # set logger
 logger = custom_logger.get_logger(__name__)
+
+whitelist_regexps = []
+blacklist_regexps = []
 
 
 def _extract_aws_logs_data(event):
@@ -112,15 +114,25 @@ def _parse_to_json(log):
             f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
         pass
 
+def _get_list_from_env_var(list_env_var, list_separator_env_var):
+    # type: (str, str) -> list
+    sep = os.environ.get(list_separator_env_var, ';')
+    return [r for r in os.environ.get(list_env_var, '').split(sep) if r != '']
+
+
+def _log_matches_list_entry(log, regexp_list):
+    # type: (dict, list) -> bool
+    return any(re.search(r, log['message']) for r in regexp_list)
+
 
 def _parse_cloudwatch_log(log, additional_data):
     # type: (dict, dict) -> bool
     _add_timestamp(log)
     if LAMBDA_LOG_GROUP in additional_data['logGroup']:
         _extract_lambda_log_message(log)
-    if _has_whitelist():
-        return _is_whitelisted_log(log)
-    if _is_blacklisted_log(log):
+    if whitelist_regexps and not _log_matches_list_entry(log, whitelist_regexps):
+        return False
+    if blacklist_regexps and _log_matches_list_entry(log, blacklist_regexps):
         return False
     log.update(additional_data)
     _parse_to_json(log)
@@ -160,7 +172,7 @@ def _get_additional_logs_data(aws_logs_data, context):
             for property_to_enrich in properties_to_enrich:
                 property_key_value = property_to_enrich.split("=")
                 additional_data[property_key_value[KEY_INDEX]
-                                ] = property_key_value[VALUE_INDEX]
+                ] = property_key_value[VALUE_INDEX]
     except KeyError:
         pass
 
@@ -172,32 +184,6 @@ def _get_additional_logs_data(aws_logs_data, context):
     return additional_data
 
 
-def _has_whitelist():
-    # type: () -> bool
-    return os.environ.get('WHITELIST') is not None
-
-def _is_whitelisted_log(log):
-    # type: (dict) -> bool
-    sep = os.environ.get('WHITELIST_SEPARATOR', ';')
-    whitelisted_regexps = os.environ.get('WHITELIST', '').split(sep)
-    for r in whitelisted_regexps:
-        if not re.search(r, log['message']):
-            return False
-    return True
-
-
-def _is_blacklisted_log(log):
-    # type: (dict) -> bool
-    sep = os.environ.get('BLACKLIST_SEPARATOR', ';')
-    blacklisted_regexps = os.environ.get('BLACKLIST', '').split(sep)
-    for r in blacklisted_regexps:
-        if r == '':
-            continue
-        if re.search(r, log['message']):
-            return True
-    return False
-
-
 def lambda_handler(event, context):
     # type (dict, 'LambdaContext') -> None
 
@@ -206,6 +192,12 @@ def lambda_handler(event, context):
     logger.debug(f'Logs data: {aws_logs_data}')
     additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper()
+
+    whitelist_regexps.extend(_get_list_from_env_var("WHITELIST", "WHITELIST_SEPARATOR"))
+    blacklist_regexps.extend(_get_list_from_env_var("BLACKLIST", "BLACKLIST_SEPARATOR"))
+
+    if whitelist_regexps and blacklist_regexps:
+        logger.warning("Both whitelist and blacklist are defined. Whitelist will be used and blacklist will be ignored")
 
     logger.info("About to send {} logs".format(
         len(aws_logs_data['logEvents'])))
