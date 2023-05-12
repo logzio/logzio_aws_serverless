@@ -36,6 +36,10 @@ PYTHON_EVENT_SIZE = 3
 NODEJS_EVENT_SIZE = 4
 LAMBDA_LOG_GROUP = '/aws/lambda/'
 
+BLACKLIST_ENV_VAR_NAME = "BLACKLIST"
+WHITELIST_ENV_VAR_NAME = "WHITELIST"
+LIST_SEPARATOR = os.environ.get("LIST_SEPARATOR", ";")
+
 # set logger
 logger = custom_logger.get_logger(__name__)
 
@@ -114,10 +118,9 @@ def _parse_to_json(log):
             f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
         pass
 
-def _get_list_from_env_var(list_env_var, list_separator_env_var):
+def _get_list_from_env_var(list_env_var):
     # type: (str, str) -> list
-    sep = os.environ.get(list_separator_env_var, ';')
-    return [r for r in os.environ.get(list_env_var, '').split(sep) if r != '']
+    return [r for r in os.environ.get(list_env_var, '').split(LIST_SEPARATOR) if r != '']
 
 
 def _log_matches_list_entry(log, regexp_list):
@@ -187,17 +190,18 @@ def _get_additional_logs_data(aws_logs_data, context):
 def lambda_handler(event, context):
     # type (dict, 'LambdaContext') -> None
 
+    whitelist_regexps.extend(_get_list_from_env_var(WHITELIST_ENV_VAR_NAME))
+    blacklist_regexps.extend(_get_list_from_env_var(BLACKLIST_ENV_VAR_NAME))
+
+    if whitelist_regexps and blacklist_regexps:
+        logger.error("Both whitelist and blacklist are defined, please define one or the other.")
+        return
+
     logger.debug(f'Handling event: {event}')
     aws_logs_data = _extract_aws_logs_data(event)
     logger.debug(f'Logs data: {aws_logs_data}')
     additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper()
-
-    whitelist_regexps.extend(_get_list_from_env_var("WHITELIST", "WHITELIST_SEPARATOR"))
-    blacklist_regexps.extend(_get_list_from_env_var("BLACKLIST", "BLACKLIST_SEPARATOR"))
-
-    if whitelist_regexps and blacklist_regexps:
-        logger.warning("Both whitelist and blacklist are defined. Whitelist will be used and blacklist will be ignored")
 
     logger.info("About to send {} logs".format(
         len(aws_logs_data['logEvents'])))

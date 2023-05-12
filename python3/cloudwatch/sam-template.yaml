@@ -75,19 +75,14 @@ Parameters:
     Description: "Skip entries whose message matches the regexps in this blacklist. Formatted as regexp1;regexp2. Not used if a whitelist is specified."
     Default: ""
 
-  LogzioBlacklistSeparator:
-    Type: "String"
-    Description: "Separator character to use for blacklist entries."
-    Default: ";"
-
   LogzioWhitelist:
     Type: "String"
     Description: "Only send entries whose message matches the regexps in this whitelist. Formatted as regexp1;regexp2"
     Default: ""
 
-  LogzioWhitelistSeparator:
+  LogzioListSeparator:
     Type: "String"
-    Description: "Separator character to use for whitelist entries."
+    Description: "Separator character to use for whitelist and blacklist entries."
     Default: ";"
 Outputs:
     LogzioCloudwatchLogsLambda:
@@ -123,6 +118,5 @@ Resources:
           SHIPPER_LOG_LEVEL: !Ref shipperLogLevel
           REQUEST_TIMEOUT: !Ref requestTimeout
           WHITELIST: !Ref LogzioWhitelist
-          WHITELIST_SEPARATOR: !Ref LogzioWhitelistSeparator
           BLACKLIST: !Ref LogzioBlacklist
-          BLACKLIST_SEPARATOR: !Ref LogzioBlacklistSeparator
+          LIST_SEPARATOR: !Ref LogzioListSeparator
