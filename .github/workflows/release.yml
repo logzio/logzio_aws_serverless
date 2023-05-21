@@ -116,4 +116,8 @@ jobs:
       - name: Clean
         run: |
           rm ./sam-template-${{ matrix.aws_region }}.yaml
-          rm ./function.zip
+          if [[ "${{ env.integration }}" = "CloudWatch" ]]; then
+            rm ./logzio-cloudwatch.zip
+          else
+            rm ./logzio-kinesis.zip
+
