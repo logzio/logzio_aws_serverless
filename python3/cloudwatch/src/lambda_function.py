@@ -2,6 +2,7 @@ import base64
 import gzip
 import json
 import logging
+from dateutil import parser
 import os
 from io import BytesIO
 
@@ -72,11 +73,19 @@ def _extract_lambda_log_message(log):
     message_parts = str_message[start_split:].split('\t')
     size = len(message_parts)
     if size == PYTHON_EVENT_SIZE or size == NODEJS_EVENT_SIZE:
-        log['@timestamp'] = message_parts[0]
-        log['requestID'] = message_parts[1]
-        log['message'] = message_parts[size - 1]
-    if size == NODEJS_EVENT_SIZE:
-        log['log_level'] = message_parts[2]
+        try:
+            # Parser only to check if timestamp for Python and NodeJS is pass without
+			# error, if not skip unparsing log and send as log message.
+            parser.parse(message_parts[0])
+            log['@timestamp'] = message_parts[0]
+            log['requestID'] = message_parts[1]
+            log['message'] = message_parts[size - 1]
+            if size == NODEJS_EVENT_SIZE:
+                log['log_level'] = message_parts[2]
+        except Exception as e:
+            logger.warning(
+                f'Error occurred while trying to parse log time: {e}.')
+            pass
 
 
 def _add_timestamp(log):
@@ -93,12 +102,14 @@ def _parse_to_json(log):
             json_object = json.loads(log['message'])
             if isinstance(json_object, list):
                 # In this case, json_object doesn't have the items() method
-                logger.info('Field message is a list and cannot be parsed to JSON')
+                logger.info(
+                    'Field message is a list and cannot be parsed to JSON')
                 return
             for key, value in json_object.items():
                 log[key] = value
     except Exception as e:
-        logger.warning(f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
+        logger.warning(
+            f'Error occurred while trying to parse log to JSON: {e}. Field will be passed as string.')
         pass
 
 
@@ -119,13 +130,16 @@ def _get_additional_logs_data(aws_logs_data, context):
         (key, aws_logs_data[key]) for key in additional_fields)
     try:
         if 'logGroup' in additional_data:
-            namespace = get_service_by_log_group_prefix(additional_data['logGroup'])
+            namespace = get_service_by_log_group_prefix(
+                additional_data['logGroup'])
             if namespace == '':
-                logger.info(f'Mapping from log group to namespace does not exist for log group {additional_data["logGroup"]}')
+                logger.info(
+                    f'Mapping from log group to namespace does not exist for log group {additional_data["logGroup"]}')
             else:
                 additional_data['namespace'] = namespace
         else:
-            logger.info('Field logGroup does not appear in data. Field namespace will not be added')
+            logger.info(
+                'Field logGroup does not appear in data. Field namespace will not be added')
     except Exception as e:
         logger.warning(f'Error while trying to get namespace: {e}')
     try:
