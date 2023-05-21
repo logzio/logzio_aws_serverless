@@ -82,9 +82,9 @@ jobs:
       - name: download zip
         run: |
           if [[ "${{ env.integration }}" = "CloudWatch" ]]; then
-            wget -c https://github.com/resdenia/github-action-aws-python/releases/download/${{ github.event.release.tag_name }}/logzio-cloudwatch-log-shipper.zip -O logzio-cloudwatch.zip
+            wget -c https://github.com/logzio/logzio_aws_serverless/releases/download/${{ github.event.release.tag_name }}/logzio-cloudwatch-log-shipper.zip -O logzio-cloudwatch.zip
           else
-            wget -c https://github.com/resdenia/github-action-aws-python/releases/download/${{ github.event.release.tag_name }}/logzio-kinesis-log-shipper.zip -O logzio-kinesis.zip
+            wget -c https://github.com/logzio/logzio_aws_serverless/releases/download/${{ github.event.release.tag_name }}/logzio-kinesis-log-shipper.zip -O logzio-kinesis.zip
           fi
         shell: bash
       - name: create new version
