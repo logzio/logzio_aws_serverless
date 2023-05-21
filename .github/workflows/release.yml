@@ -120,3 +120,4 @@ jobs:
             rm ./logzio-cloudwatch.zip
           else
             rm ./logzio-kinesis.zip
+          fi
