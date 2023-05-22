@@ -1,1 +1,4 @@
 .prettierignore
+.idea
+.DS_Store
+*/*/dist
