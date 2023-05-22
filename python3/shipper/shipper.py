@@ -155,6 +155,7 @@ class LogzioShipper(object):
             else StringLogRequest(self.MAX_BULK_SIZE_IN_BYTES)
 
         self.timeout = self._get_timeout()
+        logger.debug(f'Request timeout is set to: {self.timeout} seconds')
 
     def _get_timeout(self):
         timeout_str = os.getenv(self.TIMEOUT_ENV)
