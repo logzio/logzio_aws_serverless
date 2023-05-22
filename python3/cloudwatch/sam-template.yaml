@@ -5,7 +5,15 @@ Parameters:
   logzioListener:
     Type: "String"
     Description: "The Logz.io listener URL for your region. You can find explanations here: https://docs.logz.io/user-guide/accounts/account-region.html" 
-    Default: ""
+    Default: 'https://listener.logz.io:8071'
+    AllowedValues:
+      - 'https://listener.logz.io:8071'
+      - 'https://listener-au.logz.io:8071'
+      - 'https://listener-ca.logz.io:8071'
+      - 'https://listener-eu.logz.io:8071'
+      - 'https://listener-nl.logz.io:8071'
+      - 'https://listener-uk.logz.io:8071'
+      - 'https://listener-wa.logz.io:8071'
 
   logzioToken:
     Type: "String"
@@ -56,6 +64,9 @@ Parameters:
       - "CRITICAL"
     Default: "INFO"
 
+    requestTimeout:
+      Type: Number
+
 Outputs:
     LogzioCloudwatchLogsLambda:
       Description: "Logz.io CW logs lambda ARN"
@@ -65,7 +76,7 @@ Resources:
   LogzioCloudwatchLogsLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Runtime: python3.7
+      Runtime: python3.9
       Handler: lambda_function.lambda_handler
       CodeUri:
         Bucket: logzio-aws-integrations-<<REGION>>
