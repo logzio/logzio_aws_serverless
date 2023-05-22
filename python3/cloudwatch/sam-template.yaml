@@ -45,6 +45,17 @@ Parameters:
     Description: "CloudWatch Log Group name from where you want to send logs."
     Default: ""
 
+  shipperLogLevel:
+    Type: "String"
+    Description: "Log level of the shipping Lambda function."
+    AllowedValues:
+      - "DEBUG"
+      - "INFO"
+      - "WARNING"
+      - "ERROR"
+      - "CRITICAL"
+    Default: "INFO"
+
 Outputs:
     LogzioCloudwatchLogsLambda:
       Description: "Logz.io CW logs lambda ARN"
@@ -76,3 +87,4 @@ Resources:
           FORMAT: !Ref logzioFormat
           COMPRESS: !Ref logzioCompress
           ENRICH: !Ref logzioEnrich
+          SHIPPER_LOG_LEVEL: !Ref shipperLogLevel
