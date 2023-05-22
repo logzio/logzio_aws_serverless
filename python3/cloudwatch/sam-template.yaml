@@ -65,7 +65,10 @@ Parameters:
     Default: "INFO"
 
     requestTimeout:
-      Type: Number
+      Type: "Number"
+      Description: "Timeout in seconds for each http request for sending logs into logz.io"
+      MinValue: 0
+      Default: 15
 
 Outputs:
     LogzioCloudwatchLogsLambda:
@@ -99,3 +102,4 @@ Resources:
           COMPRESS: !Ref logzioCompress
           ENRICH: !Ref logzioEnrich
           SHIPPER_LOG_LEVEL: !Ref shipperLogLevel
+          REQUEST_TIMEOUT: !Ref requestTimeout

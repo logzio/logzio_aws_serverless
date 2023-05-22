@@ -165,7 +165,7 @@ class LogzioShipper(object):
                 if timeout > 0:
                     return timeout
                 logger.warning(f'Timeout input from user is invalid, reverting to default value {self.default_timeout}')
-            except ValueError:
+            except TypeError:
                 logger.warning(f'Could not parse timeout input {timeout_str}, reverting to default value {self.default_timeout}')
         return self.default_timeout
 
