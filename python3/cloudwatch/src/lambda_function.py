@@ -1,12 +1,12 @@
 import base64
 import gzip
 import json
-import logging
 from dateutil import parser
 import os
 from io import BytesIO
 
 from python3.shipper.shipper import LogzioShipper
+from python3.custom_logger import custom_logger
 
 KEY_INDEX = 0
 VALUE_INDEX = 1
@@ -37,8 +37,7 @@ LAMBDA_LOG_GROUP = '/aws/lambda/'
 
 
 # set logger
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = custom_logger.get_logger(__name__)
 
 
 def _extract_aws_logs_data(event):
@@ -171,7 +170,9 @@ def _get_additional_logs_data(aws_logs_data, context):
 def lambda_handler(event, context):
     # type (dict, 'LambdaContext') -> None
 
+    logger.debug(f'Handling event: {event}')
     aws_logs_data = _extract_aws_logs_data(event)
+    logger.debug(f'Logs data: {aws_logs_data}')
     additional_data = _get_additional_logs_data(aws_logs_data, context)
     shipper = LogzioShipper()
 
