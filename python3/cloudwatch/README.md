@@ -49,6 +49,8 @@ git clone https://github.com/logzio/logzio_aws_serverless.git \
 | FORMAT (Default: `text`)                   | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields.                                                                                                                                                                                           |
 | COMPRESS (Default: `true`)                 | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs.                                                                                                                                                                                                                                                  |
 | ENRICH                                     | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`.                                                                                                                                                                                                                                                       |
+| SHIPPER_LOG_LEVEL (Default: `INFO`)        | Log level for the shipper function. Possible values are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                                                                                                                                                                                                                                      |
+| REQUEST_TIMEOUT (Default: `15`)            | Timeout in seconds for each http request for sending logs into logz.io.                                                                                                                                                                                                                                                                        |
 
 #### 4. Set the CloudWatch Logs event trigger
 
@@ -106,6 +108,8 @@ Specify the stack details as per the table below, check the checkboxes and selec
 | logzioFormat (Default: `text`)                 | `json` or `text`. If `json`, the Lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields.                                                                                    |
 | logzioCompress (Default: `true`)               | Set to `true` to compress logs before sending them. Set to `false` to send uncompressed logs.                                                                                                                                           |
 | logzioEnrich                                   | Enrich CloudWatch events with custom properties, formatted as `key1=value1;key2=value2`.                                                                                                                                                |
+| shipperLogLevel (Default: `INFO`)              | Log level for the shipper function. Possible values are: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                                                                                                                               |
+| requestTimeout  (Default: `15`)                | Timeout in seconds for each http request for sending logs into logz.io.                                                                                                                                                                 |
 
 **Note:** You can find \*LogGroup in the title of the CloudWatch page for the log group that you want to export to Logz.io as shown below:
 
@@ -116,6 +120,9 @@ Give your logs some time to get from your system to ours, and then open [Kibana]
 If you still don't see your logs, see [log shipping troubleshooting](https://docs.logz.io/user-guide/log-shipping/log-shipping-troubleshooting.html).
 
 ## Changelog:
+- **1.1.1.**:
+  - Add configurable timeout for http requests.
+  - Allow configuring log level for the shipper function.
 - **1.1.0**:
   - Add support to send Lambda Insights from AWS to logz.io platform. [Resolved issue](https://github.com/logzio/logzio_aws_serverless/issues/73)  
 
