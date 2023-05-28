@@ -64,11 +64,11 @@ Parameters:
       - "CRITICAL"
     Default: "INFO"
 
-    requestTimeout:
-      Type: "Number"
-      Description: "Timeout in seconds for each http request for sending logs into logz.io"
-      MinValue: 0
-      Default: 15
+  requestTimeout:
+    Type: "Number"
+    Description: "Timeout in seconds for each http request for sending logs into logz.io"
+    MinValue: 0
+    Default: 15
 
 Outputs:
     LogzioCloudwatchLogsLambda:
@@ -84,7 +84,7 @@ Resources:
       CodeUri:
         Bucket: logzio-aws-integrations-<<REGION>>
         Key: cloudwatch-auto-deployment/<<VERSION>>/logzio-cloudwatch.zip
-      FunctionName: logzio-cloudwatch-log-shipper
+      FunctionName: !Ref AWS::StackName
       MemorySize: 512
       Timeout: 60
       Events:

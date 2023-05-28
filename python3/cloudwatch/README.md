@@ -123,6 +123,7 @@ If you still don't see your logs, see [log shipping troubleshooting](https://doc
 - **1.1.1.**:
   - Add configurable timeout for http requests.
   - Allow configuring log level for the shipper function.
+  - Upgrade to python3.9.
 - **1.1.0**:
   - Add support to send Lambda Insights from AWS to logz.io platform. [Resolved issue](https://github.com/logzio/logzio_aws_serverless/issues/73)  
 
