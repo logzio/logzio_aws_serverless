@@ -1,16 +1,16 @@
 import gzip
 import io
 import json
-import logging
 import os
 import sys
 import time
 import urllib
 import urllib.request
 
+from python3.custom_logger import custom_logger
+
 # set logger
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = custom_logger.get_logger(__name__)
 
 
 class MaxRetriesException(Exception):
@@ -125,6 +125,8 @@ class LogzioShipper(object):
     URL_ENV = 'LISTENER_URL'
     BASE_URL = "https://listener.logz.io:8071"
     region = None
+    TIMEOUT_ENV = 'REQUEST_TIMEOUT'
+    default_timeout = 15  # seconds
 
     def __init__(self):
         self._logzio_url = self.BASE_URL
@@ -151,6 +153,21 @@ class LogzioShipper(object):
         self._logs = GzipLogRequest(self.MAX_BULK_SIZE_IN_BYTES) \
             if self._compress \
             else StringLogRequest(self.MAX_BULK_SIZE_IN_BYTES)
+
+        self.timeout = self._get_timeout()
+        logger.debug(f'Request timeout is set to: {self.timeout} seconds')
+
+    def _get_timeout(self):
+        timeout_str = os.getenv(self.TIMEOUT_ENV)
+        if timeout_str != '':
+            try:
+                timeout = int(timeout_str)
+                if timeout > 0:
+                    return timeout
+                logger.warning(f'Timeout input from user is invalid, reverting to default value {self.default_timeout}')
+            except TypeError:
+                logger.warning(f'Could not parse timeout input {timeout_str}, reverting to default value {self.default_timeout}')
+        return self.default_timeout
 
     def get_base_api_url(self):
         return self.BASE_URL.replace("listener.", "listener{}.".format(self.get_region_code()))
@@ -221,9 +238,10 @@ class LogzioShipper(object):
         def do_request():
             self._logs.close()
             logs = self._logs.bytes()
+            logger.info(f'About to send {len(logs)} bytes')
             request = urllib.request.Request(self._logzio_url, data=self._logs.bytes(),
                                              headers=self._logs.http_headers())
-            return urllib.request.urlopen(request)
+            return urllib.request.urlopen(request, timeout=self.timeout)
 
         try:
             do_request()
