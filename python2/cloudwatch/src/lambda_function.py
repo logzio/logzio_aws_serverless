@@ -104,8 +104,8 @@ def _get_additional_logs_data(aws_logs_data, context):
     try:
         additional_data['type'] = os.environ['TYPE']
     except KeyError:
-        logger.info("Failed to find 'TYPE' environment variables. Using 'logzio_cloudwatch_lambda' instead")
-        additional_data['type'] = 'logzio_cloudwatch_lambda'
+        logger.info("Failed to find 'TYPE' environment variables. Using 'hyperdx_cloudwatch_lambda' instead")
+        additional_data['type'] = 'hyperdx_cloudwatch_lambda'
 
     return additional_data
 

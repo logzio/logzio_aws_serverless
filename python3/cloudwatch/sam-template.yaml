@@ -4,7 +4,7 @@ Description: "This is an AWS Lambda function that collects CloudWatch logs and s
 Parameters:
   logzioListener:
     Type: "String"
-    Description: "The Logz.io listener URL for your region. You can find explanations here: https://docs.logz.io/user-guide/accounts/account-region.html" 
+    Description: "The Logz.io listener URL for your region. You can find explanations here: https://docs.logz.io/user-guide/accounts/account-region.html"
     Default: 'https://listener.logz.io:8071'
     AllowedValues:
       - 'https://listener.logz.io:8071'
@@ -14,28 +14,20 @@ Parameters:
       - 'https://listener-nl.logz.io:8071'
       - 'https://listener-uk.logz.io:8071'
       - 'https://listener-wa.logz.io:8071'
-
   logzioToken:
     Type: "String"
     Description: "Logz.io account token."
-
   logzioType:
     Type: "String"
-    Description: "The log type you'll use with this Lambda.
-    Please note that you should create a new Lambda for each log type you use.
-    This can be a built-in log type, or your custom log type"
-    Default: "logzio_cloudwatch_lambda"
-
+    Description: "The log type you'll use with this Lambda. Please note that you should create a new Lambda for each log type you use. This can be a built-in log type, or your custom log type"
+    Default: "hyperdx_cloudwatch_lambda"
   logzioFormat:
     Type: "String"
-    Description: "JSON or text.
-    If json, the lambda function will attempt to parse the message field as JSON
-    and populate the event data with the parsed fields."
+    Description: "JSON or text. If json, the lambda function will attempt to parse the message field as JSON and populate the event data with the parsed fields."
     Default: "text"
     AllowedValues:
       - "text"
       - "json"
-
   logzioCompress:
     Type: "String"
     Description: "If true, the Lambda will send compressed logs. If false, the Lambda will send uncompressed logs."
@@ -47,12 +39,10 @@ Parameters:
     Type: "String"
     Description: "Enriches the CloudWatch events with custom properties at ship time. The format is `key1=value1;key2=value2`. By default is empty."
     Default: ""
-
   logGroup:
     Type: "String"
     Description: "CloudWatch Log Group name from where you want to send logs."
     Default: ""
-
   shipperLogLevel:
     Type: "String"
     Description: "Log level of the shipping Lambda function."
@@ -63,18 +53,15 @@ Parameters:
       - "ERROR"
       - "CRITICAL"
     Default: "INFO"
-
   requestTimeout:
     Type: "Number"
     Description: "Timeout in seconds for each http request for sending logs into logz.io"
     MinValue: 0
     Default: 15
-
 Outputs:
-    LogzioCloudwatchLogsLambda:
-      Description: "Logz.io CW logs lambda ARN"
-      Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
-
+  LogzioCloudwatchLogsLambda:
+    Description: "Logz.io CW logs lambda ARN"
+    Value: !GetAtt LogzioCloudwatchLogsLambda.Arn
 Resources:
   LogzioCloudwatchLogsLambda:
     Type: 'AWS::Serverless::Function'

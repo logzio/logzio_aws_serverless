@@ -19,7 +19,7 @@ Parameters:
     Description: "The log type you'll use with this Lambda.
     Please note that you should create a new Lambda for each log type you use.
     This can be a built-in log type, or your custom log type"
-    Default: "logzio_cloudwatch_lambda"
+    Default: "hyperdx_cloudwatch_lambda"
 
   LogzioFORMAT:
     Type: "String"
