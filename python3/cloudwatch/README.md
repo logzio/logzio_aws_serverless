@@ -1,5 +1,13 @@
 # CloudWatch Logs Shipper - Lambda
 
+## ⚠️ Deprecation notice ⚠️ 
+
+### This shipping method is deprecated and is no longer maintained.
+### Please refer to [this project](https://github.com/logzio/firehose-logs) for the recommended shipping method.
+
+
+#### Overview
+
 This is an AWS Lambda function that collects CloudWatch logs and sends them to Logz.io in bulk over HTTP.
 
 -   Option 1: [Manual Lambda configuration](#manual-lambda-configuration)
