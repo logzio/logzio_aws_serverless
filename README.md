@@ -1,8 +1,5 @@
 #  AWS Serverless Shipper - Lambda
 
-# ⚠️ Deprecation notice ⚠️
-This project is deprecated. Please refer to [this project instead](https://github.com/logzio/firehose-logs).
-
 This is an AWS Lambda function that ships logs from AWS services to Logz.io.
 
 **Note**:
