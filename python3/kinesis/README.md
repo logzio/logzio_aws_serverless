@@ -1,5 +1,8 @@
 # Kinesis Stream Shipper - Lambda
 
+# ⚠️ Deprecation notice ⚠️
+This project is deprecated. Please refer to [this project instead](https://github.com/logzio/firehose-logs).
+
 This is an AWS Lambda function that consumes a Kinesis stream and sends logs to Logz.io in bulk over HTTPS.
 
 <div class="branching-container">
